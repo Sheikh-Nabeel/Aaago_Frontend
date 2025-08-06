@@ -224,7 +224,7 @@ export const fetchReferralTree = createAsyncThunk(
       // If the normal API call fails, try with fetch directly
       try {
         const cleanedToken = cleanToken(sessionToken);
-        const fetchResponse = await fetch('http://159.198.74.112:3001/api/user/referral-tree', {
+        const fetchResponse = await fetch('https://api.aaogobackend.xyz/api/user/referral-tree', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${cleanedToken}`,

@@ -1,5 +1,5 @@
 // API Base URL
-export const API_BASE_URL = 'http://159.198.74.112:3001/api'; // Your local API server
+export const API_BASE_URL = 'https://api.aaogobackend.xyz/api'; // Your local API server
 
 // API Endpoints
 export const API_ENDPOINTS = {

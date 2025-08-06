@@ -53,7 +53,7 @@ export const testCurrentUserEndpoint = async () => {
   console.log('=== CURRENT USER ENDPOINT TEST ===');
   
   try {
-    const response = await fetch('http://159.198.74.112:3001/api/drivers/get-current-user', {
+    const response = await fetch('https://api.aaogobackend.xyz/api/drivers/get-current-user', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -80,7 +80,7 @@ export const testReferralTreeEndpoint = async () => {
   
   try {
     const cleanedToken = cleanToken(token);
-    const response = await fetch('http://159.198.74.112:3001/api/user/referral-tree', {
+    const response = await fetch('https://api.aaogobackend.xyz/api/user/referral-tree', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${cleanedToken}`,
