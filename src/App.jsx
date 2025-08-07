@@ -80,7 +80,9 @@ function AppContent() {
   useEffect(() => {
     console.log('App - Route changed to:', location.pathname);
     console.log('App - Should hide navbar/footer:', shouldHideNavFooter);
-  }, [location.pathname, shouldHideNavFooter]);
+    console.log('App - signupEmail in Redux:', signupEmail);
+    console.log('App - signupEmail in localStorage:', localStorage.getItem('signup_email'));
+  }, [location.pathname, shouldHideNavFooter, signupEmail]);
 
   return (
     <div className="App">
@@ -99,13 +101,13 @@ function AppContent() {
         <Route 
           path="/login" 
           element={
-            signupEmail ? <Navigate to="/verify-otp" replace /> : <Login />
+            (signupEmail || localStorage.getItem('signup_email')) ? <Navigate to="/verify-otp" replace /> : <Login />
           } 
         />
         <Route 
           path="/signup" 
           element={
-            signupEmail ? <Navigate to="/verify-otp" replace /> : <Signup />
+            (signupEmail || localStorage.getItem('signup_email')) ? <Navigate to="/verify-otp" replace /> : <Signup />
           } 
         />
         <Route path="/verify-otp" element={<VerifyOTP />} />

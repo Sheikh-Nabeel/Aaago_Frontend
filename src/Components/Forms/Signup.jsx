@@ -89,9 +89,14 @@ const Signup = () => {
     }
 
     try {
+      console.log('Signup - Starting signup process for email:', formData.email);
       const result = await dispatch(signupUser(formData)).unwrap();
       
+      console.log('Signup - Signup successful, result:', result);
+      console.log('Signup - Checking localStorage for signup_email:', localStorage.getItem('signup_email'));
+      
       // Redirect to OTP verification screen after successful signup
+      console.log('Signup - Navigating to /verify-otp');
       navigate('/verify-otp');
       
     } catch (error) {

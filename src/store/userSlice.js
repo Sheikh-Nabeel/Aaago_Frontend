@@ -341,7 +341,9 @@ const userSlice = createSlice({
       .addCase(signupUser.fulfilled, (state, action) => {
         state.loading = false;
         state.signupData = action.payload;
-        // Don't update signupEmail here as it's already set in the thunk
+        // Update signupEmail in Redux state for component access
+        state.signupEmail = sessionManager.getSignupEmail();
+        console.log('Signup successful - signupEmail in Redux:', state.signupEmail);
       })
       .addCase(signupUser.rejected, (state, action) => {
         state.loading = false;
