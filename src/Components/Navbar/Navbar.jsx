@@ -101,7 +101,7 @@ const Navbar = () => {
 
         {/* Right Side (desktop) */}
         <div className="hidden md:flex items-center gap-4">
-          <Link to="/mlm" className="text-lg px-4 py-1.5 rounded-md border bg-[#387B55] text-white">
+          <Link to="/" className="text-lg px-4 py-1.5 rounded-md border bg-[#387B55] text-white">
             MLM
           </Link>
           <Link to="/tree" className="text-lg px-4 py-1.5 border rounded-md bg-[#387B55] text-white">
@@ -177,7 +177,7 @@ const Navbar = () => {
           {isAuthenticated && (
             <div className="flex gap-2 w-full mb-4">
               <Link 
-                to="/mlm" 
+                to="/" 
                 onClick={() => setMobileOpen(false)}
                 className="text-sm px-4 py-2 rounded-md bg-[#387B55] text-white hover:bg-[#2d6a47] transition-colors"
               >
