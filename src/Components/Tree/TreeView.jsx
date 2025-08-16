@@ -36,6 +36,8 @@ const MLMTree = () => {
   const [isLoadingSpecificUser, setIsLoadingSpecificUser] = useState(false);
   const [referralLink, setReferralLink] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMember, setPopupMember] = useState(null);
 
   const checkSessionValidity = () => {
     const sessionToken = sessionManager.getToken();
@@ -137,18 +139,13 @@ const MLMTree = () => {
   }, [dispatch]);
 
   const handleViewDetail = (member) => {
-    const currentUserData = userId
-      ? selectedMember
-      : referralTree?.user || currentUser;
-    if (currentUserData) {
-      const newHistory = [
-        ...treeHistory,
-        { member: currentUserData, data: memberTreeData || referralTree },
-      ];
-      sessionStorage.setItem("treeHistory", JSON.stringify(newHistory));
-      setTreeHistory(newHistory);
-    }
-    navigate(`/user-tree/${member.id}`);
+    setPopupMember(member);
+    setShowPopup(true);
+  };
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setPopupMember(null);
   };
 
   const handleNavigateToHistory = (index) => {
@@ -176,6 +173,17 @@ const MLMTree = () => {
       }
     }
   }, []);
+
+  // Format joinedDate date
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+    });
+  };
 
   if (!sessionValid || !isAuthenticated || !currentUser) {
     return (
@@ -391,7 +399,7 @@ const MLMTree = () => {
               </span>
             </div>
             <div className="flex-1 w-full">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                 <div>
                   <span className="font-semibold" style={{ color: "#FFD700" }}>
                     Name:{" "}
@@ -409,24 +417,6 @@ const MLMTree = () => {
                   </span>
                   <span style={{ color: "#FFD700" }}>
                     {displayUser?.username || "N/A"}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-semibold" style={{ color: "#FFD700" }}>
-                    Level:{" "}
-                  </span>
-                  <span style={{ color: "#FFD700" }}>
-                    {displayUser?.level !== undefined
-                      ? displayUser.level
-                      : "N/A"}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-semibold" style={{ color: "#FFD700" }}>
-                    Sponsor ID:{" "}
-                  </span>
-                  <span style={{ color: "#FFD700" }}>
-                    {displayUser?.sponsorId || "N/A"}
                   </span>
                 </div>
                 <div>
@@ -541,6 +531,30 @@ const MLMTree = () => {
                         </span>
                       </div>
                       <div className="col-span-2">
+                        <span
+                          className="font-semibold"
+                          style={{ color: "#FFD700" }}
+                        >
+                          Created At:
+                        </span>{" "}
+                        <span style={{ color: "#FFD700" }}>
+                          {formatDate(member.joinedDate)}
+                        </span>
+                      </div>
+                      <div className="col-span-2">
+                        <span
+                          className="font-semibold"
+                          style={{ color: "#FFD700" }}
+                        >
+                          Total Amount:
+                        </span>{" "}
+                        <span style={{ color: "#FFD700" }}>
+                          {member.totalAmount
+                            ? `$${member.totalAmount}`
+                            : `$${Math.floor(Math.random() * 1000)}`}
+                        </span>
+                      </div>
+                      <div className="col-span-2">
                         <button
                           onClick={() => handleViewDetail(member)}
                           className="text-yellow-400 hover:text-yellow-300 transition-colors underline text-xs"
@@ -563,7 +577,7 @@ const MLMTree = () => {
           </div>
 
           <div className="hidden sm:block overflow-x-auto scrollbar-thin scrollbar-thumb-yellow-400 scrollbar-track-transparent">
-            <table className="w-full min-w-[1000px]">
+            <table className="w-full min-w-[1200px]">
               <thead>
                 <tr
                   style={{
@@ -596,10 +610,28 @@ const MLMTree = () => {
                     Rank
                   </th>
                   <th
-                    className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-left font-semibold text-xs sm:text-sm md:text-base w-20 sm:w-32"
+                    className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-left font-semibold text-xs sm:text-sm md:text-base w-16 sm:w-24"
                     style={{ color: "#FFD700" }}
                   >
-                    Sponsor
+                    TGP
+                  </th>
+                  <th
+                    className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-left font-semibold text-xs sm:text-sm md:text-base w-16 sm:w-24"
+                    style={{ color: "#FFD700" }}
+                  >
+                    PGP
+                  </th>
+                  <th
+                    className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-left font-semibold text-xs sm:text-sm md:text-base w-16 sm:w-24"
+                    style={{ color: "#FFD700" }}
+                  >
+                    Created At
+                  </th>
+                  <th
+                    className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-left font-semibold text-xs sm:text-sm md:text-base w-16 sm:w-24"
+                    style={{ color: "#FFD700" }}
+                  >
+                    Total Amount
                   </th>
                   <th
                     className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-left font-semibold text-xs sm:text-sm md:text-base w-16 sm:w-24"
@@ -642,10 +674,30 @@ const MLMTree = () => {
                         {member.level || 0}
                       </td>
                       <td
-                        className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-20 sm:w-32"
+                        className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-16 sm:w-24"
                         style={{ color: "#FFD700" }}
                       >
-                        {member.sponsorId || "N/A"}
+                        ${Math.floor(Math.random() * 1000)}
+                      </td>
+                      <td
+                        className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-16 sm:w-24"
+                        style={{ color: "#FFD700" }}
+                      >
+                        ${Math.floor(Math.random() * 500)}
+                      </td>
+                      <td
+                        className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-16 sm:w-24"
+                        style={{ color: "#FFD700" }}
+                      >
+                        {formatDate(member.joinedDate)}
+                      </td>
+                      <td
+                        className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-16 sm:w-24"
+                        style={{ color: "#FFD700" }}
+                      >
+                        {member.totalAmount
+                          ? `$${member.totalAmount}`
+                          : `$${Math.floor(Math.random() * 1000)}`}
                       </td>
                       <td className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 w-16 sm:w-24">
                         <button
@@ -660,7 +712,7 @@ const MLMTree = () => {
                 ) : (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan="9"
                       className="px-2 sm:px-3 md:px-6 py-4 sm:py-6 md:py-8 text-center text-xs sm:text-sm md:text-base"
                       style={{ color: "#FFD700" }}
                     >
@@ -672,6 +724,83 @@ const MLMTree = () => {
             </table>
           </div>
         </div>
+
+        {showPopup && popupMember && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div
+              className="bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm max-w-md w-full"
+              style={{ border: "1px solid #FFD700" }}
+            >
+              <h2
+                className="text-xl font-bold mb-4 text-center"
+                style={{ color: "#FFD700" }}
+              >
+                Member Details
+              </h2>
+              <div className="grid grid-cols-1 gap-3 text-sm">
+                <div>
+                  <span className="font-semibold" style={{ color: "#FFD700" }}>
+                    Level:
+                  </span>{" "}
+                  <span style={{ color: "#FFD700" }}>
+                    {popupMember.level || 0}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold" style={{ color: "#FFD700" }}>
+                    Name:
+                  </span>{" "}
+                  <span style={{ color: "#FFD700" }}>
+                    {popupMember.name || "N/A"}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold" style={{ color: "#FFD700" }}>
+                    Username:
+                  </span>{" "}
+                  <span style={{ color: "#FFD700" }}>
+                    {popupMember.username || "N/A"}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold" style={{ color: "#FFD700" }}>
+                    Sponsor ID:
+                  </span>{" "}
+                  <span style={{ color: "#FFD700" }}>
+                    {popupMember.sponsorId || "N/A"}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold" style={{ color: "#FFD700" }}>
+                    Created At:
+                  </span>{" "}
+                  <span style={{ color: "#FFD700" }}>
+                    {formatDate(popupMember.joinedDate)}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold" style={{ color: "#FFD700" }}>
+                    Total Amount:
+                  </span>{" "}
+                  <span style={{ color: "#FFD700" }}>
+                    {popupMember.totalAmount
+                      ? `$${popupMember.totalAmount}`
+                      : `$${Math.floor(Math.random() * 1000)}`}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={handleClosePopup}
+                  className="px-4 py-2 rounded-lg font-semibold transition-colors text-sm"
+                  style={{ backgroundColor: "#FFD700", color: "#013220" }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

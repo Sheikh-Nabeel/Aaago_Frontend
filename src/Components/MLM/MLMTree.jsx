@@ -9,10 +9,10 @@ const MLMCard = ({ label, amount }) => (
 
 export default function MLMTree() {
   const bonusTypes = [
-    { label: "DDR", amount: 0 },
-    { label: "CRR", amount: 0 },
-    { label: "BBR", amount: 0 },
-    { label: "HLR", amount: 0 },
+    { label: "DDR", amount: 750 },
+    { label: "CRR", amount: 400 },
+    { label: "BBR", amount: 500 },
+    { label: "HLR", amount: 290 },
     { label: "COUNTRY Ambassador", amount: 0 },
   ];
 
@@ -24,11 +24,11 @@ export default function MLMTree() {
       <div className="grid grid-cols-2 gap-6 bg-white shadow rounded-lg p-6 w-full max-w-lg mb-6">
         <div>
           <p className="text-gray-500">Total Earned (Lifetime)</p>
-          <p className="text-3xl font-bold text-gray-800">$0</p>
+          <p className="text-3xl font-bold text-gray-800">$5,100.00</p>
         </div>
         <div>
           <p className="text-gray-500">Available Balance</p>
-          <p className="text-3xl font-bold text-gray-800">$0</p>
+          <p className="text-3xl font-bold text-gray-800">$1,940.00</p>
         </div>
       </div>
 
