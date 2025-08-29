@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -13,9 +13,9 @@ import {
   selectIsAuthenticated,
   selectSignupEmail,
   syncWithSession,
-  logout,
 } from "./store/userSlice";
 import sessionManager from "./utils/sessionManager";
+import { ThemeProvider } from "./ThemeContext";
 
 // Components
 import Navbar from "./Components/Navbar/Navbar";
@@ -29,13 +29,26 @@ import Faqs from "./Components/Faqs/FAQS";
 import Login from "./Components/Forms/Login";
 import Signup from "./Components/Forms/Signup";
 import VerifyOTP from "./Components/Forms/VerifyOTP";
+import ForgotPassword from "./Components/Forms/ForgotPassword";
+import ResetPassword from "./Components/Forms/ResetPassword";
 import MLMTree from "./Components/MLM/MLMTree";
 import TreeView from "./Components/Tree/TreeView";
+import Profile from "./Components/Profile/Profile"; // New Profile component
+import DDRPage from "./Components/ddr/DDRPage";
+import CRRPage from "./Components/CRRPage/CRRPage";
+import BBRPage from "./Components/bbr/BBRPage";
+import HLRpage from "./Components/hlr/HLRpage";
+import RegionalAmbassador from "./Components/RegionalAmbassador/RegionalAmbassador";
 
 // Routes where navbar and footer should be hidden
-const HIDE_NAV_FOOTER_ROUTES = ["/login", "/signup", "/verify-otp"];
+const HIDE_NAV_FOOTER_ROUTES = [
+  "/login",
+  "/signup",
+  "/verify-otp",
+  "/forgot-password",
+  "/reset-password",
+];
 
-// AppContent component to use useLocation hook
 function AppContent() {
   const dispatch = useDispatch();
   const location = useLocation();
@@ -43,21 +56,16 @@ function AppContent() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const signupEmail = useSelector(selectSignupEmail);
 
-  // Check if current route should hide navbar/footer
   const shouldHideNavFooter = HIDE_NAV_FOOTER_ROUTES.includes(
     location.pathname
   );
 
-  // Sync with session manager on app load
   useEffect(() => {
     console.log("App - Initializing session sync");
     dispatch(syncWithSession());
-
-    // Log session info
     console.log("App - Session info:", sessionManager.getSessionInfo());
   }, [dispatch]);
 
-  // Check current user on app load if token exists but not authenticated
   useEffect(() => {
     if (token && !isAuthenticated) {
       console.log(
@@ -71,15 +79,10 @@ function AppContent() {
     }
   }, [dispatch, token, isAuthenticated]);
 
-  // Listen for session clearing events from API interceptor
   useEffect(() => {
     const handleSessionCleared = (event) => {
       console.log("App - Session cleared event received:", event.detail);
-
-      // Sync Redux state with session manager
       dispatch(syncWithSession());
-
-      // If we're on a protected route, redirect to login
       if (
         isAuthenticated &&
         !HIDE_NAV_FOOTER_ROUTES.includes(location.pathname)
@@ -88,15 +91,11 @@ function AppContent() {
         window.location.href = "/login";
       }
     };
-
     window.addEventListener("sessionCleared", handleSessionCleared);
-
-    return () => {
+    return () =>
       window.removeEventListener("sessionCleared", handleSessionCleared);
-    };
   }, [dispatch, isAuthenticated, location.pathname]);
 
-  // Log route changes for debugging
   useEffect(() => {
     console.log("App - Route changed to:", location.pathname);
     console.log("App - Should hide navbar/footer:", shouldHideNavFooter);
@@ -108,19 +107,16 @@ function AppContent() {
   }, [location.pathname, shouldHideNavFooter, signupEmail]);
 
   return (
-    <div className="App">
-      {/* Show Navbar and Footer only on certain routes */}
+    <div className="App bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
       {!shouldHideNavFooter && <Navbar />}
-
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home />} />{" "}
+        {/* Default to Home for authenticated users */}
         <Route path="/about" element={<About />} />
         <Route path="/services" element={<Services />} />
         <Route path="/team" element={<Team />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/faqs" element={<Faqs />} />
-
-        {/* Auth Routes */}
         <Route
           path="/login"
           element={
@@ -142,17 +138,33 @@ function AppContent() {
           }
         />
         <Route path="/verify-otp" element={<VerifyOTP />} />
-
-        {/* MLM Routes */}
+        <Route
+          path="/forgot-password"
+          element={
+            signupEmail || localStorage.getItem("signup_email") ? (
+              <Navigate to="/reset-password" replace />
+            ) : (
+              <ForgotPassword />
+            )
+          }
+        />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/mlm" element={<MLMTree />} />
+        <Route path="/ddr" element={<DDRPage />} />
+        <Route path="/crr" element={<CRRPage />} />
+        <Route path="/bbr" element={<BBRPage />} />
+        <Route path="/hlr" element={<HLRpage />} />
+        <Route path="/RegionalAmbassador" element={<RegionalAmbassador />} />
         <Route path="/tree" element={<TreeView />} />
         <Route path="/user-tree/:userId" element={<MLMTree />} />
-
-        {/* Catch all route */}
+        <Route
+          path="/profile"
+          element={
+            isAuthenticated ? <Profile /> : <Navigate to="/login" replace />
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-
-      {/* Show Navbar and Footer only on certain routes */}
       {!shouldHideNavFooter && <Footer />}
     </div>
   );
@@ -161,7 +173,9 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </Router>
   );
 }

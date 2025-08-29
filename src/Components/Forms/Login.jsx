@@ -1,159 +1,294 @@
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import login from './Images/login.png'
-import { Link } from 'react-router-dom';
-import { loginUser, selectLoading, selectError, clearError } from '../../store/userSlice';
-import { showValidationError } from '../../utils/toast';
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  FaFacebookF,
+  FaGoogle,
+  FaLinkedinIn,
+  FaEye,
+  FaEyeSlash,
+} from "react-icons/fa";
+import logo from "./Images/logo.png";
+import {
+  loginUser,
+  selectLoading,
+  selectError,
+  clearError,
+} from "../../store/userSlice";
+import { useTheme } from "../../ThemeContext";
 
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const loading = useSelector(selectLoading);
   const error = useSelector(selectError);
+  const { theme } = useTheme();
 
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-
+  const [formData, setFormData] = useState({ identifier: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [validationErrors, setValidationErrors] = useState({});
+  const [errors, setErrors] = useState({});
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Clear validation error for this field
-    if (validationErrors[name]) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error for the field when user starts typing
+    setErrors((prev) => ({ ...prev, [name]: "", form: "" }));
+  };
+
+  const detectIdentifierType = (identifier) => {
+    if (/\S+@\S+\.\S+/.test(identifier)) {
+      return { email: identifier, phoneNumber: "", username: "" };
     }
+    if (/^\+?\d{10,15}$/.test(identifier.replace(/\s/g, ""))) {
+      return { email: "", phoneNumber: identifier, username: "" };
+    }
+    return { email: "", phoneNumber: "", username: identifier };
   };
 
   const validateForm = () => {
-    const errors = {};
-
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Email is invalid';
+    const newErrors = {};
+    if (!formData.identifier.trim()) {
+      newErrors.identifier = "Email, phone number, or username is required";
     }
-
     if (!formData.password) {
-      errors.password = 'Password is required';
+      newErrors.password = "Password is required";
     }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
+
+  useEffect(() => {
+    // Handle server-side errors
+    if (error) {
+      setErrors({ form: typeof error === "string" ? error : error.message || "An error occurred" });
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Clear any previous errors
+    setErrors({}); // Clear previous errors
     dispatch(clearError());
-    
+
     if (!validateForm()) {
-      showValidationError(validationErrors);
       return;
     }
 
+    const loginData = {
+      ...detectIdentifierType(formData.identifier),
+      password: formData.password,
+    };
+
     try {
-      const result = await dispatch(loginUser(formData)).unwrap();
-      
-      // Redirect to home page after successful login
-      setTimeout(() => {
-        navigate('/');
-      }, 2000);
-      
-    } catch (error) {
-      // Error is already handled in the Redux slice
-      console.error('Login failed:', error);
+      const result = await dispatch(loginUser(loginData)).unwrap();
+      console.log("Login successful:", result);
+      navigate("/profile");
+    } catch (err) {
+      console.error("Login failed:", err);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center rounded-xl bg-gradient-to-b from-green-200 to-green-300">
-      <div className="bg-[#E4E4E4] rounded-2xl shadow-md flex max-lg:flex-col w-[70%] max-lg:w-[90%] max-w-6xl p-6 md:p-10">
-        
-        {/* Left Side Image Section */}
-        <div className=" md:flex w-1/2 items-center max-lg:w-full justify-center">
-          <img src={login} alt="login illustration" className="w-[90%]" />
-        </div>
+    <div
+      className={`min-h-screen flex items-center justify-center px-4 py-8 transition-colors duration-300 ${
+        theme === "dark"
+          ? "bg-gradient-to-b from-gray-800 to-gray-900"
+          : "bg-gray-100"
+      }`}
+    >
+      <div
+        className={`shadow-lg rounded-2xl flex flex-col md:flex-row w-full max-w-6xl my-8 sm:my-12 overflow-hidden transition-colors duration-300 ${
+          theme === "dark" ? "bg-gray-800" : "bg-white"
+        }`}
+      >
+        {/* LEFT FORM */}
+        <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-6 sm:p-10">
+          <h2
+            className={`text-2xl sm:text-3xl font-semibold mb-4 text-center ${
+              theme === "dark" ? "text-yellow-400" : "text-[#013220]"
+            }`}
+          >
+            Sign in to Your Account
+          </h2>
 
-        {/* Right Side Form Section */}
-        <div className="w-full md:w-1/2 flex flex-col justify-center px-4 max-lg:px-2">
-          <h2 className="text-3xl font-bold mb-6">Log into your account</h2>
+          {errors.form && (
+            <p
+              className={`text-sm mb-4 text-center ${
+                theme === "dark" ? "text-red-400" : "text-red-600"
+              }`}
+            >
+              {errors.form}
+            </p>
+          )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-semibold text-[#0A4624] mb-1">
-                Email Address <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full border rounded px-4 py-1 outline-none"
-                placeholder="Enter your email"
-              />
-              {validationErrors.email && (
-                <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
-              )}
-            </div>
-
-            <div className="relative">
-              <label className="block text-sm font-semibold text-[#0A4624] mb-1">
-                Password <span className="text-red-500">*</span>
-              </label>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="w-full border rounded px-4 py-1 outline-none pr-10"
-                placeholder="Enter your password"
-              />
-              <div
-                className="absolute right-3 top-9 text-gray-500 cursor-pointer"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </div>
-              {validationErrors.password && (
-                <p className="text-red-500 text-xs mt-1">{validationErrors.password}</p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="remember" className="w-4 h-4" />
-              <label htmlFor="remember" className="text-sm text-gray-600">Keep me signed in</label>
-            </div>
-
-            <div className="flex gap-4">
-              <button 
-                type="submit"
+          <div className="flex space-x-3 mb-5">
+            {[FaFacebookF, FaGoogle, FaLinkedinIn].map((Icon, idx) => (
+              <button
+                key={idx}
+                className={`border rounded-full p-2 w-10 h-10 flex items-center justify-center transition-colors duration-300 ${
+                  theme === "dark"
+                    ? "border-gray-500 hover:bg-gray-600"
+                    : "border-gray-300 hover:bg-gray-100"
+                }`}
                 disabled={loading}
-                className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Logging in...' : 'Login'}
+                <Icon
+                  className={
+                    theme === "dark" ? "text-gray-300" : "text-gray-600"
+                  }
+                />
               </button>
-              <Link to='/signup' className="bg-white border px-6 py-2 rounded shadow">
-                Register
+            ))}
+          </div>
+
+          <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+            {/* Identifier */}
+            <div>
+              {errors.identifier && (
+                <p
+                  className={`text-sm mb-1 ${
+                    theme === "dark" ? "text-red-400" : "text-red-600"
+                  }`}
+                >
+                  {errors.identifier}
+                </p>
+              )}
+              <input
+                type="text"
+                name="identifier"
+                value={formData.identifier}
+                onChange={handleInputChange}
+                placeholder="Email, Phone, or Username"
+                disabled={loading}
+                className={`w-full rounded-lg px-4 py-2 border focus:ring-2 focus:ring-yellow-500 outline-none transition-colors duration-300 ${
+                  theme === "dark"
+                    ? `bg-gray-600 border-gray-500 text-white placeholder-gray-300 ${
+                        errors.identifier ? "!border-red-500" : ""
+                      }`
+                    : `bg-white border-gray-300 text-gray-900 placeholder-gray-500 ${
+                        errors.identifier ? "!border-red-600" : ""
+                      }`
+                }`}
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              {errors.password && (
+                <p
+                  className={`text-sm mb-1 ${
+                    theme === "dark" ? "text-red-400" : "text-red-600"
+                  }`}
+                >
+                  {errors.password}
+                </p>
+              )}
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="Password"
+                  disabled={loading}
+                  className={`w-full rounded-lg px-4 py-2 border focus:ring-2 focus:ring-yellow-500 outline-none pr-10 transition-colors duration-300 ${
+                    theme === "dark"
+                      ? `bg-gray-600 border-gray-500 text-white placeholder-gray-300 ${
+                          errors.password ? "!border-red-500" : ""
+                        }`
+                      : `bg-white border-gray-300 text-gray-900 placeholder-gray-500 ${
+                          errors.password ? "!border-red-600" : ""
+                        }`
+                  }`}
+                />
+                <div
+                  className={`absolute right-3 top-3 cursor-pointer ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-500"
+                  }`}
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </div>
+              </div>
+            </div>
+
+            {/* Remember & Forgot */}
+            <div
+              className={`flex justify-between items-center text-sm ${
+                theme === "dark" ? "text-gray-300" : "text-gray-600"
+              }`}
+            >
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className={`w-4 h-4 ${
+                    theme === "dark" ? "text-yellow-400" : "text-[#013220]"
+                  }`}
+                />
+                Remember me
+              </label>
+              <Link
+                to="/forgot-password"
+                className={`hover:underline ${
+                  theme === "dark" ? "text-teal-400" : "text-teal-600"
+                }`}
+              >
+                Forgot password?
               </Link>
             </div>
-          </form>
 
-          <Link to='/forget' className="text-sm text-gray-500 mt-4 text-center">
-            Forgot your password?
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full p-3 font-semibold rounded-full transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                theme === "dark"
+                  ? "bg-yellow-500 text-gray-900 hover:bg-yellow-400"
+                  : "bg-yellow-500 text-[#013220] hover:bg-yellow-400"
+              }`}
+            >
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+        </div>
+
+        {/* RIGHT SIDE - LOGO + TEXT */}
+        <div
+          className={`w-full md:w-1/2 flex flex-col justify-center items-center p-8 transition-colors duration-300 ${
+            theme === "dark"
+              ? "bg-gradient-to-b from-gray-900 to-gray-700 text-yellow-400"
+              : "bg-gradient-to-b from-green-900 to-green-700 text-yellow-400"
+          }`}
+        >
+          <div className="flex flex-col items-center mb-6">
+            {/* Logo */}
+            <img
+              src={logo}
+              alt="Aao Go Logo"
+              className="w-20 h-20 object-contain mb-2"
+            />
+
+            {/* Welcome Text */}
+            <h2 className="text-xl font-semibold text-yellow-400">
+              Welcome to Aao Go
+            </h2>
+          </div>
+
+          <p className="mt-2 text-sm sm:text-base text-center text-yellow-400">
+            Sign in and continue your journey with us.
+          </p>
+          <p className="text-center max-w-xs mb-6 z-10 text-sm text-yellow-400">
+            Don’t have an account? Sign up now!
+          </p>
+          <Link
+            to="/signup"
+            className={`border px-6 py-2 rounded-full transition text-sm ${
+              theme === "dark"
+                ? "border-yellow-400 hover:bg-yellow-400 hover:text-gray-900"
+                : "border-yellow-400 hover:bg-yellow-400 hover:text-green-900"
+            }`}
+          >
+            Sign Up
           </Link>
         </div>
       </div>

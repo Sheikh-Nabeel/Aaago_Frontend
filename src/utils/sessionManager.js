@@ -1,18 +1,18 @@
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 
 // Session storage keys
 const SESSION_KEYS = {
-  TOKEN: 'auth_token',
-  USER: 'auth_user',
-  SIGNUP_EMAIL: 'signup_email',
-  SESSION_ID: 'session_id',
+  TOKEN: "auth_token",
+  USER: "auth_user",
+  SIGNUP_EMAIL: "signup_email",
+  SESSION_ID: "session_id",
 };
 
 // Cookie options
 const COOKIE_OPTIONS = {
   expires: 7, // 7 days
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict",
 };
 
 class SessionManager {
@@ -23,7 +23,10 @@ class SessionManager {
 
   // Generate unique session ID
   generateSessionId() {
-    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const sessionId =
+      "session_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+    console.log("SessionManager - Generated sessionId:", sessionId);
+    return sessionId;
   }
 
   // Initialize session
@@ -33,48 +36,62 @@ class SessionManager {
       this.setSessionId(this.sessionId);
     } else {
       this.sessionId = existingSessionId;
+      console.log("SessionManager - Using existing sessionId:", this.sessionId);
     }
   }
 
   // Session ID management
   getSessionId() {
-    return localStorage.getItem(SESSION_KEYS.SESSION_ID);
+    const sessionId = localStorage.getItem(SESSION_KEYS.SESSION_ID);
+    console.log("SessionManager - getSessionId:", sessionId);
+    return sessionId;
   }
 
   setSessionId(sessionId) {
     localStorage.setItem(SESSION_KEYS.SESSION_ID, sessionId);
+    console.log("SessionManager - setSessionId:", sessionId);
   }
 
   // Token management
   getToken() {
-    // Try cookies first, then localStorage
     const cookieToken = Cookies.get(SESSION_KEYS.TOKEN);
     const localToken = localStorage.getItem(SESSION_KEYS.TOKEN);
-    
-    console.log('SessionManager - Cookie token:', cookieToken ? 'exists' : 'none');
-    console.log('SessionManager - LocalStorage token:', localToken ? 'exists' : 'none');
-    
+
+    console.log(
+      "SessionManager - getToken - Cookie token:",
+      cookieToken ? "exists" : "none"
+    );
+    console.log(
+      "SessionManager - getToken - LocalStorage token:",
+      localToken ? "exists" : "none"
+    );
+
     return cookieToken || localToken;
   }
 
   setToken(token) {
     if (!token) {
-      console.warn('SessionManager - Attempting to set empty token');
+      console.warn("SessionManager - setToken - Empty token provided");
       return false;
     }
 
     try {
-      // Store in both cookies and localStorage for redundancy
       Cookies.set(SESSION_KEYS.TOKEN, token, COOKIE_OPTIONS);
       localStorage.setItem(SESSION_KEYS.TOKEN, token);
-      
-      console.log('SessionManager - Token stored successfully');
-      console.log('SessionManager - Token in cookies:', !!Cookies.get(SESSION_KEYS.TOKEN));
-      console.log('SessionManager - Token in localStorage:', !!localStorage.getItem(SESSION_KEYS.TOKEN));
-      
+
+      console.log("SessionManager - setToken - Token stored successfully");
+      console.log(
+        "SessionManager - setToken - Token in cookies:",
+        !!Cookies.get(SESSION_KEYS.TOKEN)
+      );
+      console.log(
+        "SessionManager - setToken - Token in localStorage:",
+        !!localStorage.getItem(SESSION_KEYS.TOKEN)
+      );
+
       return true;
     } catch (error) {
-      console.error('SessionManager - Error storing token:', error);
+      console.error("SessionManager - setToken - Error:", error);
       return false;
     }
   }
@@ -83,10 +100,10 @@ class SessionManager {
     try {
       Cookies.remove(SESSION_KEYS.TOKEN);
       localStorage.removeItem(SESSION_KEYS.TOKEN);
-      console.log('SessionManager - Token removed successfully');
+      console.log("SessionManager - removeToken - Token removed successfully");
       return true;
     } catch (error) {
-      console.error('SessionManager - Error removing token:', error);
+      console.error("SessionManager - removeToken - Error:", error);
       return false;
     }
   }
@@ -95,25 +112,33 @@ class SessionManager {
   getUser() {
     try {
       const userData = localStorage.getItem(SESSION_KEYS.USER);
-      return userData ? JSON.parse(userData) : null;
+      const parsedUser = userData ? JSON.parse(userData) : null;
+      console.log("SessionManager - getUser - Retrieved user:", parsedUser);
+      return parsedUser;
     } catch (error) {
-      console.error('SessionManager - Error parsing user data:', error);
+      console.error(
+        "SessionManager - getUser - Error parsing user data:",
+        error
+      );
       return null;
     }
   }
 
   setUser(user) {
     if (!user) {
-      console.warn('SessionManager - Attempting to set empty user data');
+      console.warn("SessionManager - setUser - Empty user data provided");
       return false;
     }
 
     try {
       localStorage.setItem(SESSION_KEYS.USER, JSON.stringify(user));
-      console.log('SessionManager - User data stored successfully');
+      console.log("SessionManager - setUser - Stored user:", user);
       return true;
     } catch (error) {
-      console.error('SessionManager - Error storing user data:', error);
+      console.error(
+        "SessionManager - setUser - Error storing user data:",
+        error
+      );
       return false;
     }
   }
@@ -121,87 +146,95 @@ class SessionManager {
   removeUser() {
     try {
       localStorage.removeItem(SESSION_KEYS.USER);
-      console.log('SessionManager - User data removed successfully');
+      console.log(
+        "SessionManager - removeUser - User data removed successfully"
+      );
       return true;
     } catch (error) {
-      console.error('SessionManager - Error removing user data:', error);
+      console.error("SessionManager - removeUser - Error:", error);
       return false;
     }
   }
 
   // Signup email management
   getSignupEmail() {
-    return localStorage.getItem(SESSION_KEYS.SIGNUP_EMAIL);
+    const email = localStorage.getItem(SESSION_KEYS.SIGNUP_EMAIL);
+    console.log("SessionManager - getSignupEmail:", email);
+    return email;
   }
 
   setSignupEmail(email) {
     if (email) {
       localStorage.setItem(SESSION_KEYS.SIGNUP_EMAIL, email);
-      console.log('SessionManager - Signup email stored:', email);
+      console.log("SessionManager - setSignupEmail:", email);
     }
   }
 
   removeSignupEmail() {
     localStorage.removeItem(SESSION_KEYS.SIGNUP_EMAIL);
-    console.log('SessionManager - Signup email removed');
+    console.log("SessionManager - removeSignupEmail - Signup email removed");
   }
 
   // Session validation
   isAuthenticated() {
     const token = this.getToken();
     const user = this.getUser();
-    
+
     const isAuth = !!(token && user);
-    console.log('SessionManager - Authentication check:', {
+    console.log("SessionManager - isAuthenticated:", {
       hasToken: !!token,
       hasUser: !!user,
-      isAuthenticated: isAuth
+      isAuthenticated: isAuth,
     });
-    
+
     return isAuth;
   }
 
   // Complete session management
   createSession(token, user) {
-    console.log('SessionManager - Creating new session');
-    
+    console.log("SessionManager - createSession - Token:", token);
+    console.log("SessionManager - createSession - User:", user);
+
     const tokenStored = this.setToken(token);
     const userStored = this.setUser(user);
-    
+
     if (tokenStored && userStored) {
-      console.log('SessionManager - Session created successfully');
+      console.log(
+        "SessionManager - createSession - Session created successfully"
+      );
       return true;
     } else {
-      console.error('SessionManager - Failed to create session');
+      console.error("SessionManager - createSession - Failed");
       return false;
     }
   }
 
   clearSession() {
-    console.log('SessionManager - Clearing session');
-    
+    console.log("SessionManager - clearSession");
+
     this.removeToken();
     this.removeUser();
     this.removeSignupEmail();
-    
-    console.log('SessionManager - Session cleared successfully');
+
+    console.log("SessionManager - clearSession - Session cleared successfully");
   }
 
   // Session refresh
   refreshSession(token, user) {
-    console.log('SessionManager - Refreshing session');
-    
+    console.log("SessionManager - refreshSession - Token:", token);
+    console.log("SessionManager - refreshSession - User:", user);
+
     if (token && user) {
       return this.createSession(token, user);
     } else {
-      console.warn('SessionManager - Cannot refresh session with empty data');
+      console.warn("SessionManager - refreshSession - Empty data provided");
       return false;
     }
   }
 
   // Get session info for debugging
   getSessionInfo() {
-    return {
+    const info = {
       sessionId: this.getSessionId(),
       hasToken: !!this.getToken(),
       hasUser: !!this.getUser(),
@@ -209,22 +242,26 @@ class SessionManager {
       signupEmail: this.getSignupEmail(),
       tokenLength: this.getToken()?.length || 0,
     };
+    console.log("SessionManager - getSessionInfo:", info);
+    return info;
   }
 
   // Validate token format (basic check)
   validateTokenFormat(token) {
-    if (!token) return false;
-    
-    // Basic JWT format validation (3 parts separated by dots)
-    const parts = token.split('.');
-    if (parts.length !== 3) return false;
-    
-    // Check if all parts have content
-    return parts.every(part => part && part.length > 0);
+    if (!token) {
+      console.warn("SessionManager - validateTokenFormat - No token provided");
+      return false;
+    }
+
+    const parts = token.split(".");
+    const isValid =
+      parts.length === 3 && parts.every((part) => part && part.length > 0);
+    console.log("SessionManager - validateTokenFormat - Token valid:", isValid);
+    return isValid;
   }
 }
 
 // Create singleton instance
 const sessionManager = new SessionManager();
 
-export default sessionManager; 
+export default sessionManager;

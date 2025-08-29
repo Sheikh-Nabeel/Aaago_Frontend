@@ -1,11 +1,18 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
-import { authAPI } from '../services/api';
-import sessionManager from '../utils/sessionManager';
+// src/store/userSlice.js
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import {
+  showSuccess,
+  showError,
+  showLoading,
+  dismissToast,
+} from "../utils/toast";
+import { authAPI } from "../services/api";
+import { API_BASE_URL } from "../constants/api";
+import sessionManager from "../utils/sessionManager";
 
-// Initial state using session manager
+// Initial state
 const initialState = {
-  user: sessionManager.getUser(),
+  user: null,
   token: sessionManager.getToken(),
   isAuthenticated: sessionManager.isAuthenticated(),
   loading: false,
@@ -14,127 +21,175 @@ const initialState = {
   referralTree: null,
   referralTreeLoading: false,
   referralTreeError: null,
-  referralTreeAttempted: false, // Flag to prevent infinite loops
+  referralTreeAttempted: false,
 };
 
 // Debug initial state
-console.log('=== REDUX INITIAL STATE ===');
-console.log('Session info:', sessionManager.getSessionInfo());
-console.log('Initial state:', {
-  user: !!initialState.user,
-  token: !!initialState.token,
-  isAuthenticated: initialState.isAuthenticated,
-  signupEmail: !!initialState.signupEmail
-});
-console.log('==========================');
+console.log("=== REDUX INITIAL STATE ===");
+console.log("Session info:", sessionManager.getSessionInfo());
+console.log("Initial state user:", initialState.user);
+console.log("Initial state token:", initialState.token);
+console.log("Initial state isAuthenticated:", initialState.isAuthenticated);
+console.log("==========================");
 
-// Async thunks for API calls
+// Async thunks
 export const loginUser = createAsyncThunk(
-  'user/login',
-  async (credentials, { rejectWithValue }) => {
-    const loadingToast = showLoading('Logging in...');
+  "user/login",
+  async (credentials, { dispatch, rejectWithValue }) => {
+    console.log("loginUser - Attempting login with credentials:", credentials);
+    const loadingToast = showLoading("Logging in...");
     try {
       const response = await authAPI.login(credentials);
       dismissToast(loadingToast);
-      
-      // Create session with received data
-      const sessionCreated = sessionManager.createSession(
-        response.data.token,
-        response.data.user
-      );
-      
+
+      const { user, token } = response.data;
+      const sessionCreated = sessionManager.createSession(token, user);
+
       if (!sessionCreated) {
-        throw new Error('Failed to create user session');
+        throw new Error("Failed to create user session");
       }
-      
-      return response.data;
+
+      console.log("loginUser - Success, user:", user);
+      showSuccess("Login successful!");
+      return { user, token };
     } catch (error) {
       dismissToast(loadingToast);
-      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
-      showError(errorMessage);
-      return rejectWithValue(errorMessage);
+      const errorData = error.response?.data || {
+        message: error.message || "Login failed",
+      };
+      console.log("loginUser - Error:", errorData);
+      showError(errorData.message || "Login failed");
+      return rejectWithValue(errorData.message || "Login failed");
     }
   }
 );
 
 export const signupUser = createAsyncThunk(
-  'user/signup',
+  "user/signup",
   async (userData, { rejectWithValue }) => {
-    const loadingToast = showLoading('Creating account...');
+    const loadingToast = showLoading("Creating account...");
     try {
       const response = await authAPI.signup(userData);
       dismissToast(loadingToast);
-      
-      // Save email to session manager
+
+      // Store email in sessionManager and verify
       sessionManager.setSignupEmail(userData.email);
-      
-      // Store userId in localStorage for resend OTP functionality
+      console.log("signupUser - Email stored in session:", userData.email);
+      console.log(
+        "signupUser - Verify email in localStorage:",
+        localStorage.getItem("signup_email")
+      );
+
       if (response.data.userId) {
-        localStorage.setItem('signupUserId', response.data.userId);
+        localStorage.setItem("signupUserId", response.data.userId);
       }
-      
-      showSuccess(response.data.message || 'OTP sent. Please verify to complete registration.');
-      
+
+      showSuccess(
+        response.data.message ||
+          "OTP sent. Please verify to complete registration."
+      );
+
       return response.data;
     } catch (error) {
       dismissToast(loadingToast);
-      const errorMessage = error.response?.data?.message || error.message || 'Signup failed';
-      showError(errorMessage);
-      return rejectWithValue(errorMessage);
+      const errorData = error.response?.data || {
+        message: error.message || "Signup failed",
+      };
+      console.log("signupUser - Error:", errorData);
+      return rejectWithValue(errorData);
     }
   }
 );
 
 export const verifyOTP = createAsyncThunk(
-  'user/verifyOTP',
-  async (otpData, { rejectWithValue }) => {
-    const loadingToast = showLoading('Verifying OTP...');
+  "user/verifyOTP",
+  async (otpData, { dispatch, rejectWithValue }) => {
+    const loadingToast = showLoading("Verifying OTP...");
     try {
       const response = await authAPI.verifyOTP(otpData);
       dismissToast(loadingToast);
-      
-      // Create session with received data
-      const sessionCreated = sessionManager.createSession(
-        response.data.token,
-        response.data.user
-      );
-      
-      if (!sessionCreated) {
-        throw new Error('Failed to create user session');
-      }
-      
-      // Clear signup email after successful verification
+
       sessionManager.removeSignupEmail();
-      
-      // Clear userId from localStorage after successful verification
-      localStorage.removeItem('signupUserId');
-      
-      showSuccess(response.data.message || 'Registration completed successfully!');
+
+      console.log("verifyOTP - Response data:", response.data);
+      showSuccess(
+        response.data.message || "Registration completed successfully!"
+      );
       return response.data;
     } catch (error) {
       dismissToast(loadingToast);
-      const errorMessage = error.response?.data?.message || error.message || 'OTP verification failed';
-      showError(errorMessage);
-      return rejectWithValue(errorMessage);
+      const errorData = error.response?.data || {
+        message: error.message || "OTP verification failed",
+      };
+      showError(errorData.message || "OTP verification failed");
+      return rejectWithValue(errorData.message || "OTP verification failed");
+    }
+  }
+);
+
+
+export const forgotPassword = createAsyncThunk(
+  "user/forgotPassword",
+  async (emailData, { rejectWithValue }) => {
+    const loadingToast = showLoading("Sending password reset OTP...");
+    try {
+      const response = await authAPI.forgotPassword(emailData);
+      dismissToast(loadingToast);
+
+      sessionManager.setSignupEmail(emailData.email);
+      if (response.data.userId) {
+        localStorage.setItem("signupUserId", response.data.userId);
+      }
+
+      showSuccess(response.data.message || "Reset OTP sent to email.");
+      return response.data;
+    } catch (error) {
+      dismissToast(loadingToast);
+      const errorData = error.response?.data || {
+        message: error.message || "Failed to send reset OTP",
+      };
+      showError(errorData.message || "Failed to send reset OTP");
+      return rejectWithValue(errorData.message || "Failed to send reset OTP");
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  "user/resetPassword",
+  async (resetData, { rejectWithValue }) => {
+    const loadingToast = showLoading("Resetting password...");
+    try {
+      const response = await authAPI.resetPassword(resetData);
+      dismissToast(loadingToast);
+
+      sessionManager.removeSignupEmail();
+      localStorage.removeItem("signupUserId");
+
+      showSuccess(response.data.message || "Password reset successful.");
+      return response.data;
+    } catch (error) {
+      dismissToast(loadingToast);
+      const errorData = error.response?.data || {
+        message: error.message || "Password reset failed",
+      };
+      showError(errorData.message || "Password reset failed");
+      return rejectWithValue(errorData.message || "Password reset failed");
     }
   }
 );
 
 export const logoutUser = createAsyncThunk(
-  'user/logout',
+  "user/logout",
   async (_, { rejectWithValue }) => {
-    const loadingToast = showLoading('Logging out...');
+    const loadingToast = showLoading("Logging out...");
     try {
-      // Clear session completely
       sessionManager.clearSession();
-      
       dismissToast(loadingToast);
-      showSuccess('Logged out successfully');
-      
-      return { message: 'Logged out successfully' };
+      showSuccess("Logged out successfully");
+      return { message: "Logged out successfully" };
     } catch (error) {
       dismissToast(loadingToast);
-      const errorMessage = error.message || 'Logout failed';
+      const errorMessage = error.message || "Logout failed";
       showError(errorMessage);
       return rejectWithValue(errorMessage);
     }
@@ -142,113 +197,121 @@ export const logoutUser = createAsyncThunk(
 );
 
 export const checkCurrentUser = createAsyncThunk(
-  'user/checkCurrentUser',
+  "user/checkCurrentUser",
   async (_, { rejectWithValue }) => {
     try {
       const response = await authAPI.getCurrentUser();
-      
-      // Refresh session with updated data
-      const sessionRefreshed = sessionManager.refreshSession(
-        response.data.token,
-        response.data.user
-      );
-      
-      if (!sessionRefreshed) {
-        console.warn('Failed to refresh session with current user data');
+      console.log("checkCurrentUser - Raw response:", response.data);
+      const { user, token } = response.data;
+      if (!user || !token) {
+        throw new Error("Invalid response: user or token missing");
       }
-      
-      return response.data;
+      const sessionCreated = sessionManager.createSession(token, user);
+      if (!sessionCreated) {
+        throw new Error("Failed to create session");
+      }
+      console.log("checkCurrentUser - User data:", user);
+      console.log("checkCurrentUser - Token:", token);
+      return { user, token };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to get user data';
-      
-      // Only clear session on 401 errors
+      console.error("checkCurrentUser - Error:", error);
+      const errorData = error.response?.data || {
+        message: error.message || "Failed to get user data",
+      };
       if (error.response?.status === 401) {
-        console.log('401 error - clearing session');
+        console.log("checkCurrentUser - 401 Unauthorized, clearing session");
         sessionManager.clearSession();
       }
-      
-      return rejectWithValue(errorMessage);
+      return rejectWithValue(errorData.message || "Failed to get user data");
     }
   }
 );
 
 export const resendOTP = createAsyncThunk(
-  'user/resendOTP',
-  async (userId, { rejectWithValue }) => {
-    const loadingToast = showLoading('Resending OTP...');
+  "user/resendOTP",
+  async (email, { rejectWithValue }) => {
+    const loadingToast = showLoading("Resending OTP...");
     try {
-      const response = await authAPI.resendOTP(userId);
+      const response = await authAPI.resendOTP({ email });
       dismissToast(loadingToast);
-      showSuccess(response.data.message || 'OTP resent successfully!');
+      showSuccess(response.data.message || "OTP resent successfully!");
       return response.data;
     } catch (error) {
       dismissToast(loadingToast);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to resend OTP';
-      showError(errorMessage);
-      return rejectWithValue(errorMessage);
+      const errorData = error.response?.data || {
+        message: error.message || "Failed to resend OTP",
+      };
+      showError(errorData.message || "Failed to resend OTP");
+      return rejectWithValue(errorData.message || "Failed to resend OTP");
     }
   }
 );
 
 export const fetchReferralTree = createAsyncThunk(
-  'user/fetchReferralTree',
+  "user/fetchReferralTree",
   async (_, { rejectWithValue, getState }) => {
-    // Check if we've already attempted to fetch and failed
     const state = getState();
     if (state.user.referralTreeAttempted && state.user.referralTreeError) {
-      console.log('Referral tree fetch already attempted and failed, skipping');
-      return rejectWithValue('Referral tree fetch already attempted');
+      console.log("fetchReferralTree - Already attempted and failed, skipping");
+      return rejectWithValue("Referral tree fetch already attempted");
     }
 
-    // Check if we have a valid session before making the API call
     const sessionToken = sessionManager.getToken();
     const sessionUser = sessionManager.getUser();
     const sessionIsAuth = sessionManager.isAuthenticated();
-    
+
     if (!sessionToken || !sessionUser || !sessionIsAuth) {
-      console.log('No valid session for referral tree fetch');
-      return rejectWithValue('No valid session');
+      console.log("fetchReferralTree - No valid session");
+      return rejectWithValue("No valid session");
     }
 
-    const loadingToast = showLoading('Loading referral tree...');
-    
+    const loadingToast = showLoading("Loading referral tree...");
+
     try {
-      // First try with the normal API call
-      console.log('Attempting referral tree fetch with normal API call');
       const response = await authAPI.getReferralTree();
       dismissToast(loadingToast);
+      console.log("fetchReferralTree - Success:", response.data);
       return response.data;
     } catch (error) {
-      console.log('Normal API call failed, trying with fetch directly');
-      
-      // If the normal API call fails, try with fetch directly
+      console.log("fetchReferralTree - API call failed, trying fetch directly");
       try {
-        const cleanedToken = cleanToken(sessionToken);
-        const fetchResponse = await fetch('https://api.aaogobackend.xyz/api/user/referral-tree', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${cleanedToken}`,
-            'Content-Type': 'application/json'
+        const cleanedToken = sessionManager.getToken().replace(/['"]/g, "");
+        const fetchResponse = await fetch(
+          `${API_BASE_URL}/user/referral-tree`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${cleanedToken}`,
+              "Content-Type": "application/json",
+            },
           }
-        });
-        
+        );
+
         if (fetchResponse.ok) {
           const data = await fetchResponse.json();
           dismissToast(loadingToast);
-          console.log('Fetch call succeeded');
+          console.log("fetchReferralTree - Fetch call succeeded:", data);
           return data;
         } else {
           const errorData = await fetchResponse.json();
-          console.log('Fetch call failed:', fetchResponse.status, errorData);
+          console.log(
+            "fetchReferralTree - Fetch call failed:",
+            fetchResponse.status,
+            errorData
+          );
           dismissToast(loadingToast);
-          return rejectWithValue(errorData.message || 'Failed to load referral tree');
+          showError(errorData.message || "Failed to load referral tree");
+          return rejectWithValue(
+            errorData.message || "Failed to load referral tree"
+          );
         }
       } catch (fetchError) {
-        console.log('Fetch call also failed:', fetchError);
+        console.log("fetchReferralTree - Fetch call also failed:", fetchError);
         dismissToast(loadingToast);
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to load referral tree';
-        showError(errorMessage);
-        return rejectWithValue(errorMessage);
+        showError(fetchError.message || "Failed to load referral tree");
+        return rejectWithValue(
+          fetchError.message || "Failed to load referral tree"
+        );
       }
     }
   }
@@ -256,18 +319,20 @@ export const fetchReferralTree = createAsyncThunk(
 
 // User slice
 const userSlice = createSlice({
-  name: 'user',
+  name: "user",
   initialState,
   reducers: {
     setUser: (state, action) => {
       state.user = action.payload;
       state.isAuthenticated = true;
       sessionManager.setUser(action.payload);
+      console.log("setUser - Updated user:", action.payload);
     },
     setToken: (state, action) => {
       state.token = action.payload;
       state.isAuthenticated = true;
       sessionManager.setToken(action.payload);
+      console.log("setToken - Updated token:", action.payload);
     },
     logout: (state) => {
       state.user = null;
@@ -278,9 +343,9 @@ const userSlice = createSlice({
       state.referralTree = null;
       state.referralTreeError = null;
       state.referralTreeAttempted = false;
-      
       sessionManager.clearSession();
-      showSuccess('Logged out successfully');
+      console.log("logout - Session cleared");
+      showSuccess("Logged out successfully");
     },
     clearError: (state) => {
       state.error = null;
@@ -297,25 +362,31 @@ const userSlice = createSlice({
       state.referralTreeError = null;
       state.referralTreeAttempted = false;
     },
-    // Sync with session manager
     syncWithSession: (state) => {
-      state.user = sessionManager.getUser();
-      state.token = sessionManager.getToken();
+      const sessionUser = sessionManager.getUser();
+      const sessionToken = sessionManager.getToken();
+      state.user = sessionUser;
+      state.token = sessionToken;
       state.isAuthenticated = sessionManager.isAuthenticated();
       state.signupEmail = sessionManager.getSignupEmail();
+      console.log("syncWithSession - Synced state:", {
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+        signupEmail: state.signupEmail,
+      });
     },
-    // Reset referral tree attempt flag
     resetReferralTreeAttempt: (state) => {
       state.referralTreeAttempted = false;
       state.referralTreeError = null;
     },
   },
   extraReducers: (builder) => {
-    // Login
     builder
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
+        console.log("loginUser - Pending");
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
@@ -323,38 +394,34 @@ const userSlice = createSlice({
         state.token = action.payload.token;
         state.isAuthenticated = true;
         state.error = null;
-        
-        console.log('Login successful - Session created');
-        console.log('Session info:', sessionManager.getSessionInfo());
+        console.log("loginUser - Fulfilled, user:", action.payload.user);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
-
-    // Signup
-    builder
+        console.log("loginUser - Rejected:", action.payload);
+      })
       .addCase(signupUser.pending, (state) => {
         state.loading = true;
         state.error = null;
+        console.log("signupUser - Pending");
       })
       .addCase(signupUser.fulfilled, (state, action) => {
         state.loading = false;
         state.signupData = action.payload;
-        // Update signupEmail in Redux state for component access
         state.signupEmail = sessionManager.getSignupEmail();
-        console.log('Signup successful - signupEmail in Redux:', state.signupEmail);
+        state.error = null;
+        console.log("signupUser - Fulfilled, signupEmail:", state.signupEmail);
       })
       .addCase(signupUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
-
-    // Verify OTP
-    builder
+        console.log("signupUser - Rejected:", action.payload);
+      })
       .addCase(verifyOTP.pending, (state) => {
         state.loading = true;
         state.error = null;
+        console.log("verifyOTP - Pending");
       })
       .addCase(verifyOTP.fulfilled, (state, action) => {
         state.loading = false;
@@ -363,20 +430,52 @@ const userSlice = createSlice({
         state.isAuthenticated = true;
         state.signupEmail = null;
         state.error = null;
-        
-        console.log('OTP verification successful - Session created');
-        console.log('Session info:', sessionManager.getSessionInfo());
+        console.log("verifyOTP - Fulfilled, user:", action.payload.user);
       })
       .addCase(verifyOTP.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
-
-    // Logout
-    builder
+        console.log("verifyOTP - Rejected:", action.payload);
+      })
+      .addCase(forgotPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        console.log("forgotPassword - Pending");
+      })
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.loading = false;
+        state.signupEmail = sessionManager.getSignupEmail();
+        state.error = null;
+        console.log(
+          "forgotPassword - Fulfilled, signupEmail:",
+          state.signupEmail
+        );
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        console.log("forgotPassword - Rejected:", action.payload);
+      })
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        console.log("resetPassword - Pending");
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.loading = false;
+        state.signupEmail = null;
+        state.error = null;
+        console.log("resetPassword - Fulfilled");
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        console.log("resetPassword - Rejected:", action.payload);
+      })
       .addCase(logoutUser.pending, (state) => {
         state.loading = true;
         state.error = null;
+        console.log("logoutUser - Pending");
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.loading = false;
@@ -388,13 +487,11 @@ const userSlice = createSlice({
         state.referralTree = null;
         state.referralTreeError = null;
         state.referralTreeAttempted = false;
-        
-        console.log('Logout successful - Session cleared');
+        console.log("logoutUser - Fulfilled");
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        // Even if logout API fails, clear local state
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
@@ -402,16 +499,13 @@ const userSlice = createSlice({
         state.referralTree = null;
         state.referralTreeError = null;
         state.referralTreeAttempted = false;
-        
         sessionManager.clearSession();
-        console.log('Logout failed but session cleared');
-      });
-
-    // Check current user
-    builder
+        console.log("logoutUser - Rejected:", action.payload);
+      })
       .addCase(checkCurrentUser.pending, (state) => {
         state.loading = true;
         state.error = null;
+        console.log("checkCurrentUser - Pending");
       })
       .addCase(checkCurrentUser.fulfilled, (state, action) => {
         state.loading = false;
@@ -419,82 +513,81 @@ const userSlice = createSlice({
         state.token = action.payload.token;
         state.isAuthenticated = true;
         state.error = null;
-        
-        console.log('Current user check successful - Session refreshed');
-        console.log('Session info:', sessionManager.getSessionInfo());
+        console.log("checkCurrentUser - Fulfilled, user:", action.payload.user);
       })
       .addCase(checkCurrentUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        
-        // Only clear session on 401 errors
-        if (action.payload?.includes('401') || action.payload?.includes('Unauthorized')) {
+        if (
+          action.payload?.includes("401") ||
+          action.payload?.includes("Unauthorized")
+        ) {
           state.user = null;
           state.token = null;
           state.isAuthenticated = false;
           state.referralTree = null;
           state.referralTreeError = null;
           state.referralTreeAttempted = false;
-          
           sessionManager.clearSession();
-          console.log('401 error - Session cleared');
+          console.log(
+            "checkCurrentUser - Rejected: 401 Unauthorized, session cleared"
+          );
         } else {
-          console.log('Current user check failed - but keeping session:', action.payload);
+          console.log(
+            "checkCurrentUser - Rejected, keeping session:",
+            action.payload
+          );
         }
-      });
-
-    // Fetch referral tree
-    builder
+      })
       .addCase(fetchReferralTree.pending, (state) => {
         state.referralTreeLoading = true;
         state.referralTreeError = null;
         state.referralTreeAttempted = true;
+        console.log("fetchReferralTree - Pending");
       })
       .addCase(fetchReferralTree.fulfilled, (state, action) => {
         state.referralTreeLoading = false;
         state.referralTree = action.payload.referralTree;
         state.referralTreeError = null;
-        console.log('Referral tree fetched successfully');
+        console.log("fetchReferralTree - Fulfilled");
       })
       .addCase(fetchReferralTree.rejected, (state, action) => {
         state.referralTreeLoading = false;
         state.referralTreeError = action.payload;
         state.referralTreeAttempted = true;
-        console.log('Referral tree fetch failed:', action.payload);
-      });
-
-    // Resend OTP
-    builder
+        console.log("fetchReferralTree - Rejected:", action.payload);
+      })
       .addCase(resendOTP.pending, (state) => {
         state.loading = true;
         state.error = null;
+        console.log("resendOTP - Pending");
       })
       .addCase(resendOTP.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
-        console.log('OTP resent successfully');
+        console.log("resendOTP - Fulfilled");
       })
       .addCase(resendOTP.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        console.log("resendOTP - Rejected:", action.payload);
       });
   },
 });
 
-// Export actions
-export const { 
-  setUser, 
-  setToken, 
-  logout, 
-  clearError, 
-  setLoading, 
-  clearSignupEmail, 
+// Export actions and selectors
+export const {
+  setUser,
+  setToken,
+  logout,
+  clearError,
+  setLoading,
+  clearSignupEmail,
   clearReferralTree,
   syncWithSession,
-  resetReferralTreeAttempt
+  resetReferralTreeAttempt,
 } = userSlice.actions;
 
-// Export selectors
 export const selectUser = (state) => state.user.user;
 export const selectToken = (state) => state.user.token;
 export const selectIsAuthenticated = (state) => state.user.isAuthenticated;
@@ -503,9 +596,10 @@ export const selectError = (state) => state.user.error;
 export const selectSignupData = (state) => state.user.signupData;
 export const selectSignupEmail = (state) => state.user.signupEmail;
 export const selectReferralTree = (state) => state.user.referralTree;
-export const selectReferralTreeLoading = (state) => state.user.referralTreeLoading;
+export const selectReferralTreeLoading = (state) =>
+  state.user.referralTreeLoading;
 export const selectReferralTreeError = (state) => state.user.referralTreeError;
-export const selectReferralTreeAttempted = (state) => state.user.referralTreeAttempted;
+export const selectReferralTreeAttempted = (state) =>
+  state.user.referralTreeAttempted;
 
-// Export reducer
-export default userSlice.reducer; 
+export default userSlice.reducer;

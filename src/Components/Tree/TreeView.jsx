@@ -13,6 +13,7 @@ import {
 } from "../../store/userSlice";
 import sessionManager from "../../utils/sessionManager";
 import { authAPI } from "../../services/api";
+import { SERVER_BASE_URL } from "../../constants/api";
 
 const MLMTree = () => {
   const dispatch = useDispatch();
@@ -38,6 +39,11 @@ const MLMTree = () => {
   const [copySuccess, setCopySuccess] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMember, setPopupMember] = useState(null);
+  const [popupMemberDetails, setPopupMemberDetails] = useState(null);
+  const [popupReferralLevels, setPopupReferralLevels] = useState([]);
+  const [levelMembersDetails, setLevelMembersDetails] = useState({}); // New state for storing user details
+  const [levelMembersLoading, setLevelMembersLoading] = useState(false); // New state for loading user details
+  const [levelMembersError, setLevelMembersError] = useState(null); // New state for user details errors
 
   const checkSessionValidity = () => {
     const sessionToken = sessionManager.getToken();
@@ -62,7 +68,15 @@ const MLMTree = () => {
       const response = await authAPI.getReferralTree(targetUserId);
       console.log("Specific user tree response:", response.data);
       setMemberTreeData(response.data);
-      setSelectedMember(response.data.referralTree.user);
+      setSelectedMember(response.data.referralTree?.user || response.data.user);
+      if (response.data.referralTree?.user || response.data.user) {
+        const newHistory = [
+          ...treeHistory,
+          { member: response.data.referralTree?.user || response.data.user },
+        ];
+        setTreeHistory(newHistory);
+        sessionStorage.setItem("treeHistory", JSON.stringify(newHistory));
+      }
     } catch (error) {
       console.error("Error loading specific user tree:", error);
       setMemberTreeError(
@@ -82,20 +96,121 @@ const MLMTree = () => {
       console.error("Error fetching referral link:", error);
       setCopySuccess(false);
       alert("Failed to fetch referral link. Please try again.");
+      return null;
     }
   };
 
   const handleShareReferralLink = async () => {
     try {
       const link = referralLink || (await fetchReferralLink());
-      await navigator.clipboard.writeText(link);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
+      if (link) {
+        await navigator.clipboard.writeText(link);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      }
     } catch (error) {
       console.error("Error copying referral link:", error);
       setCopySuccess(false);
       alert("Failed to copy referral link. Please try again.");
     }
+  };
+
+  const fetchUserDetails = async (userId) => {
+    try {
+      const response = await authAPI.getUserById(userId);
+      return response.data.user;
+    } catch (error) {
+      console.error(`Error fetching details for user ${userId}:`, error);
+      return null;
+    }
+  };
+
+  const fetchLevelMembersDetails = async (members) => {
+    setLevelMembersLoading(true);
+    setLevelMembersError(null);
+    try {
+      const userDetailsPromises = members.map(async (member) => {
+        if (levelMembersDetails[member.id]) {
+          return { id: member.id, details: levelMembersDetails[member.id] };
+        }
+        const details = await fetchUserDetails(member.id);
+        return { id: member.id, details };
+      });
+      const userDetailsArray = await Promise.all(userDetailsPromises);
+      const newLevelMembersDetails = userDetailsArray.reduce((acc, { id, details }) => {
+        if (details) acc[id] = details;
+        return acc;
+      }, { ...levelMembersDetails });
+      setLevelMembersDetails(newLevelMembersDetails);
+    } catch (error) {
+      console.error("Error fetching level members details:", error);
+      setLevelMembersError("Failed to load member details");
+    } finally {
+      setLevelMembersLoading(false);
+    }
+  };
+
+  const handleViewDetail = async (member) => {
+    try {
+      setPopupMember(member);
+      setShowPopup(true);
+      const userResponse = await authAPI.getUserById(member.id);
+      setPopupMemberDetails(userResponse.data.user);
+      const treeResponse = await authAPI.getReferralTree(member.id);
+      const membersData =
+        treeResponse.data.referralTree?.members ||
+        treeResponse.data.referralTree?.levels?.members ||
+        treeResponse.data.members ||
+        {};
+      const allLevelMembers = Object.keys(membersData)
+        .filter((key) => key.startsWith("level"))
+        .reduce((acc, levelKey) => {
+          return [...acc, ...membersData[levelKey]];
+        }, []);
+      const levelMembersDetails = await Promise.all(
+        allLevelMembers.map(async (levelMember) => {
+          try {
+            const levelUserResponse = await authAPI.getUserById(levelMember.id);
+            return levelUserResponse.data.user;
+          } catch (error) {
+            console.error(
+              `Error fetching details for user ${levelMember.id}:`,
+              error
+            );
+            return { ...levelMember, selfieImage: null };
+          }
+        })
+      );
+      setPopupReferralLevels(levelMembersDetails);
+    } catch (error) {
+      console.error("Error fetching member details:", error);
+      setPopupMemberDetails(null);
+      setPopupReferralLevels([]);
+      alert("Failed to load member details. Please try again.");
+    }
+  };
+
+  const handleNavigateToMemberTree = (member) => {
+    const newHistory = [...treeHistory, { member }];
+    setTreeHistory(newHistory);
+    sessionStorage.setItem("treeHistory", JSON.stringify(newHistory));
+    navigate(`/user-tree/${member.id}`);
+  };
+
+  const handleNavigateToHistory = (index) => {
+    const historyItem = treeHistory[index];
+    if (historyItem) {
+      const newHistory = treeHistory.slice(0, index + 1);
+      setTreeHistory(newHistory);
+      sessionStorage.setItem("treeHistory", JSON.stringify(newHistory));
+      navigate(`/user-tree/${historyItem.member.id}`);
+    }
+  };
+
+  const handleBackToMainTree = () => {
+    setTreeHistory([]);
+    sessionStorage.removeItem("treeHistory");
+    navigate("/mlm");
   };
 
   useEffect(() => {
@@ -125,7 +240,7 @@ const MLMTree = () => {
       console.log("URL userId changed, loading specific user tree");
       loadSpecificUserTree(userId);
     }
-  }, [userId]);
+  }, [userId, sessionValid, isAuthenticated]);
 
   useEffect(() => {
     const handleSessionCleared = (event) => {
@@ -137,30 +252,6 @@ const MLMTree = () => {
     return () =>
       window.removeEventListener("sessionCleared", handleSessionCleared);
   }, [dispatch]);
-
-  const handleViewDetail = (member) => {
-    setPopupMember(member);
-    setShowPopup(true);
-  };
-
-  const handleClosePopup = () => {
-    setShowPopup(false);
-    setPopupMember(null);
-  };
-
-  const handleNavigateToHistory = (index) => {
-    const historyItem = treeHistory[index];
-    if (historyItem) {
-      const newHistory = treeHistory.slice(0, index);
-      sessionStorage.setItem("treeHistory", JSON.stringify(newHistory));
-      navigate(`/user-tree/${historyItem.member.id}`);
-    }
-  };
-
-  const handleBackToMainTree = () => {
-    sessionStorage.removeItem("treeHistory");
-    navigate("/mlm");
-  };
 
   useEffect(() => {
     const savedHistory = sessionStorage.getItem("treeHistory");
@@ -174,7 +265,22 @@ const MLMTree = () => {
     }
   }, []);
 
-  // Format joinedDate date
+  useEffect(() => {
+    const isViewingSpecificUser = !!userId;
+    const currentTreeData = isViewingSpecificUser ? memberTreeData : referralTree;
+    const membersData =
+      currentTreeData?.referralTree?.members ||
+      currentTreeData?.referralTree?.levels?.members ||
+      currentTreeData?.members ||
+      {};
+    const currentLevelMembers = membersData[`level${selectedLevel}`] || [];
+    if (currentLevelMembers.length > 0) {
+      fetchLevelMembersDetails(currentLevelMembers);
+    } else {
+      setLevelMembersDetails({});
+    }
+  }, [selectedLevel, memberTreeData, referralTree]);
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -188,9 +294,9 @@ const MLMTree = () => {
   if (!sessionValid || !isAuthenticated || !currentUser) {
     return (
       <div
-        className="min-h-screen"
+        className="min-h-screen mt-18"
         style={{
-          background: "linear-gradient(135deg, #013220 0%, #0a4a2a 100%)",
+          backgroundColor: "#083A06",
         }}
       >
         <div className="flex items-center justify-center h-screen">
@@ -207,7 +313,7 @@ const MLMTree = () => {
                 : "Your session has expired. Please log in again."}
             </p>
             <button
-              onClick={() => (window.location.href = "/login")}
+              onClick={() => navigate("/login")}
               className="px-8 py-3 rounded-lg font-semibold transition-colors"
               style={{ backgroundColor: "#FFD700", color: "#013220" }}
             >
@@ -219,12 +325,12 @@ const MLMTree = () => {
     );
   }
 
-  if ((!userId && loading) || (userId && isLoadingSpecificUser)) {
+  if (loading || isLoadingSpecificUser || levelMembersLoading) {
     return (
       <div
-        className="min-h-screen"
+        className="min-h-screen mt-28"
         style={{
-          background: "linear-gradient(135deg, #013220 0%, #0a4a2a 100%)",
+          backgroundColor: "#083A06",
         }}
       >
         <div className="flex items-center justify-center h-screen">
@@ -236,6 +342,8 @@ const MLMTree = () => {
             <p className="text-xl" style={{ color: "#FFD700" }}>
               {userId
                 ? "Loading user tree..."
+                : levelMembersLoading
+                ? "Loading member details..."
                 : "Loading your referral tree..."}
             </p>
           </div>
@@ -244,12 +352,12 @@ const MLMTree = () => {
     );
   }
 
-  if ((!userId && error) || (userId && memberTreeError)) {
+  if (error || memberTreeError || levelMembersError) {
     return (
       <div
-        className="min-h-screen"
+        className="min-h-screen mt-28"
         style={{
-          background: "linear-gradient(135deg, #013220 0%, #0a4a2a 100%)",
+          backgroundColor: "#083A06",
         }}
       >
         <div className="flex items-center justify-center h-screen">
@@ -261,18 +369,24 @@ const MLMTree = () => {
               Error Loading Referral Tree
             </h2>
             <p className="text-lg mb-6" style={{ color: "#FFD700" }}>
-              {userId ? memberTreeError : error}
+              {memberTreeError || error || levelMembersError}
             </p>
             <div className="flex gap-4 justify-center">
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  if (userId) {
+                    loadSpecificUserTree(userId);
+                  } else {
+                    dispatch(fetchReferralTree());
+                  }
+                }}
                 className="px-6 py-2 rounded-lg font-semibold transition-colors"
                 style={{ backgroundColor: "#FFD700", color: "#013220" }}
               >
                 Try Again
               </button>
               <button
-                onClick={() => navigate("/mlm")}
+                onClick={handleBackToMainTree}
                 className="px-6 py-2 rounded-lg font-semibold transition-colors"
                 style={{
                   backgroundColor: "#013220",
@@ -289,12 +403,37 @@ const MLMTree = () => {
     );
   }
 
-  if ((!userId && !referralTree) || (userId && !memberTreeData)) {
+  const isViewingSpecificUser = !!userId;
+  const currentTreeData = isViewingSpecificUser ? memberTreeData : referralTree;
+
+  const membersData =
+    currentTreeData?.referralTree?.members ||
+    currentTreeData?.referralTree?.levels?.members ||
+    currentTreeData?.members ||
+    {};
+  const countsData =
+    currentTreeData?.referralTree?.counts ||
+    currentTreeData?.referralTree?.levels?.counts ||
+    currentTreeData?.counts ||
+    {};
+  const levelsAvailable = Object.keys(membersData)
+    .filter((key) => key.startsWith("level"))
+    .map((key) => parseInt(key.replace("level", ""), 10))
+    .sort((a, b) => a - b);
+  const currentLevelMembers = membersData[`level${selectedLevel}`] || [];
+  const displayUser = isViewingSpecificUser
+    ? selectedMember
+    : referralTree?.referralTree?.user || referralTree?.user || currentUser;
+
+  if (
+    !currentTreeData ||
+    (!currentTreeData.referralTree && !currentTreeData.members)
+  ) {
     return (
       <div
-        className="min-h-screen"
+        className="min-h-screen mt-28"
         style={{
-          background: "linear-gradient(135deg, #013220 0%, #0a4a2a 100%)",
+          backgroundColor: "#083A06",
         }}
       >
         <div className="flex items-center justify-center h-screen">
@@ -311,7 +450,13 @@ const MLMTree = () => {
                 : "Your referral tree data is not available."}
             </p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                if (userId) {
+                  loadSpecificUserTree(userId);
+                } else {
+                  dispatch(fetchReferralTree());
+                }
+              }}
               className="px-6 py-2 rounded-lg font-semibold transition-colors"
               style={{ backgroundColor: "#FFD700", color: "#013220" }}
             >
@@ -323,24 +468,11 @@ const MLMTree = () => {
     );
   }
 
-  const isViewingSpecificUser = !!userId;
-  const currentTreeData = isViewingSpecificUser ? memberTreeData : referralTree;
-  const currentLevelMembers =
-    currentTreeData?.referralTree?.members?.[`level${selectedLevel}`] ||
-    currentTreeData?.members?.[`level${selectedLevel}`] ||
-    [];
-  const displayUser = isViewingSpecificUser
-    ? selectedMember
-    : referralTree?.user || currentUser;
-  const countsData = isViewingSpecificUser
-    ? memberTreeData?.referralTree?.counts
-    : referralTree?.counts;
-
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen mt-20 mb-10"
       style={{
-        background: "linear-gradient(135deg, #013220 0%, #0a4a2a 100%)",
+        backgroundColor: "#083A06",
       }}
     >
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
@@ -351,11 +483,11 @@ const MLMTree = () => {
                 if (treeHistory.length > 0) {
                   const lastItem = treeHistory[treeHistory.length - 1];
                   const newHistory = treeHistory.slice(0, -1);
+                  setTreeHistory(newHistory);
                   sessionStorage.setItem(
                     "treeHistory",
                     JSON.stringify(newHistory)
                   );
-                  setTreeHistory(newHistory);
                   navigate(`/user-tree/${lastItem.member.id}`);
                 } else {
                   handleBackToMainTree();
@@ -373,6 +505,20 @@ const MLMTree = () => {
             >
               Back to Main Tree
             </button>
+            {treeHistory.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span style={{ color: "#FFD700" }}>History:</span>
+                {treeHistory.map((item, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleNavigateToHistory(index)}
+                    className="text-yellow-400 hover:text-yellow-300 text-sm"
+                  >
+                    {item.member.name || item.member.username} {">"}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -381,23 +527,32 @@ const MLMTree = () => {
           style={{ border: "1px solid #FFD700" }}
         >
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-            <div
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center"
-              style={{
-                backgroundColor: "#013220",
-                border: "2px solid #FFD700",
-              }}
-            >
-              <span
-                className="text-2xl sm:text-3xl"
-                style={{ color: "#FFD700" }}
+            {displayUser?.selfieImage ? (
+              <img
+                src={`${SERVER_BASE_URL}${displayUser.selfieImage}`}
+                alt="Selfie"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover"
+                style={{ border: "2px solid #FFD700" }}
+              />
+            ) : (
+              <div
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center"
+                style={{
+                  backgroundColor: "#013220",
+                  border: "2px solid #FFD700",
+                }}
               >
-                {displayUser?.name?.charAt(0) ||
-                  displayUser?.firstName?.charAt(0) ||
-                  displayUser?.username?.charAt(0) ||
-                  "U"}
-              </span>
-            </div>
+                <span
+                  className="text-2xl sm:text-3xl"
+                  style={{ color: "#FFD700" }}
+                >
+                  {displayUser?.name?.charAt(0) ||
+                    displayUser?.firstName?.charAt(0) ||
+                    displayUser?.username?.charAt(0) ||
+                    "U"}
+                </span>
+              </div>
+            )}
             <div className="flex-1 w-full">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                 <div>
@@ -427,6 +582,22 @@ const MLMTree = () => {
                     {countsData?.totalReferrals || 0}
                   </span>
                 </div>
+                <div>
+                  <span className="font-semibold" style={{ color: "#FFD700" }}>
+                    KYC Status:{" "}
+                  </span>
+                  <span style={{ color: "#FFD700" }}>
+                    {displayUser?.kycStatus || "N/A"}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold" style={{ color: "#FFD700" }}>
+                    Country:{" "}
+                  </span>
+                  <span style={{ color: "#FFD700" }}>
+                    {displayUser?.country || "N/A"}
+                  </span>
+                </div>
               </div>
               <div className="mt-4">
                 <button
@@ -444,7 +615,7 @@ const MLMTree = () => {
         </div>
 
         <div className="flex flex-nowrap gap-1 sm:gap-2 md:gap-4 mb-6 sm:mb-8 justify-center overflow-x-auto">
-          {[1, 2, 3, 4].map((level) => (
+          {levelsAvailable.map((level) => (
             <button
               key={level}
               onClick={() => setSelectedLevel(level)}
@@ -474,6 +645,36 @@ const MLMTree = () => {
                     key={member.id || index}
                     className="bg-white bg-opacity-5 rounded-lg p-3 border border-yellow-400 border-opacity-30"
                   >
+                    <div className="flex items-center gap-2 mb-2">
+                      {levelMembersDetails[member.id]?.selfieImage ? (
+                        <img
+                          src={`${SERVER_BASE_URL}${levelMembersDetails[member.id].selfieImage}`}
+                          alt="Selfie"
+                          className="w-10 h-10 rounded-full object-cover"
+                          style={{ border: "1px solid #FFD700" }}
+                        />
+                      ) : (
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center"
+                          style={{
+                            backgroundColor: "#013220",
+                            border: "1px solid #FFD700",
+                          }}
+                        >
+                          <span
+                            className="text-sm"
+                            style={{ color: "#FFD700" }}
+                          >
+                            {member.name?.charAt(0) ||
+                              member.username?.charAt(0) ||
+                              "U"}
+                          </span>
+                        </div>
+                      )}
+                      <span style={{ color: "#FFD700" }}>
+                        {member.name || member.username || "N/A"}
+                      </span>
+                    </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span
@@ -524,22 +725,43 @@ const MLMTree = () => {
                           className="font-semibold"
                           style={{ color: "#FFD700" }}
                         >
-                          Sponsor:
-                        </span>{" "}
-                        <span style={{ color: "#FFD700" }}>
-                          {member.sponsorId || "N/A"}
-                        </span>
-                      </div>
-                      <div className="col-span-2">
-                        <span
-                          className="font-semibold"
-                          style={{ color: "#FFD700" }}
-                        >
                           Created At:
                         </span>{" "}
                         <span style={{ color: "#FFD700" }}>
                           {formatDate(member.joinedDate)}
                         </span>
+                      </div>
+                      <div className="col-span-2 flex items-center gap-2">
+                        <span
+                          className="font-semibold"
+                          style={{ color: "#FFD700" }}
+                        >
+                          TGP:
+                        </span>{" "}
+                        <div className="flex items-center justify-cen">
+                          <div className="mb-1 text-[#FFD700]">0</div>
+                          <img
+                            className="w-[7%] h-[7%]"
+                            src="/images.png"
+                            alt=""
+                          />
+                        </div>
+                      </div>
+                      <div className="col-span-2 flex items-center gap-2">
+                        <span
+                          className="font-semibold"
+                          style={{ color: "#FFD700" }}
+                        >
+                          PGP:
+                        </span>{" "}
+                        <div className="flex items-center justify-cen">
+                          <div className="mb-1 text-[#FFD700]">0</div>
+                          <img
+                            className="w-[7%] h-[7%]"
+                            src="/images.png"
+                            alt=""
+                          />
+                        </div>
                       </div>
                       <div className="col-span-2">
                         <span
@@ -548,18 +770,20 @@ const MLMTree = () => {
                         >
                           Total Amount:
                         </span>{" "}
-                        <span style={{ color: "#FFD700" }}>
-                          {member.totalAmount
-                            ? `$${member.totalAmount}`
-                            : `$${Math.floor(Math.random() * 1000)}`}
-                        </span>
+                        <span style={{ color: "#FFD700" }}>AED 0</span>
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-2 flex gap-2">
                         <button
                           onClick={() => handleViewDetail(member)}
                           className="text-yellow-400 hover:text-yellow-300 transition-colors underline text-xs"
                         >
                           View Detail
+                        </button>
+                        <button
+                          onClick={() => handleNavigateToMemberTree(member)}
+                          className="text-yellow-400 hover:text-yellow-300 transition-colors underline text-xs"
+                        >
+                          View Tree
                         </button>
                       </div>
                     </div>
@@ -585,6 +809,12 @@ const MLMTree = () => {
                     borderBottom: "1px solid #FFD700",
                   }}
                 >
+                  <th
+                    className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-left font-semibold text-xs sm:text-sm md:text-base w-12 sm:w-16"
+                    style={{ color: "#FFD700" }}
+                  >
+                    Image
+                  </th>
                   <th
                     className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-left font-semibold text-xs sm:text-sm md:text-base w-12 sm:w-16"
                     style={{ color: "#FFD700" }}
@@ -634,10 +864,10 @@ const MLMTree = () => {
                     Total Amount
                   </th>
                   <th
-                    className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-left font-semibold text-xs sm:text-sm md:text-base w-16 sm:w-24"
+                    className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-left font-semibold text-xs sm:text-sm md:text-base w-24 sm:w-32"
                     style={{ color: "#FFD700" }}
                   >
-                    Action
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -649,6 +879,36 @@ const MLMTree = () => {
                       className="hover:bg-opacity-20 hover:bg-yellow-400 transition-colors"
                       style={{ borderBottom: "1px solid #FFD700" }}
                     >
+                      <td
+                        className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-12 sm:w-16"
+                        style={{ color: "#FFD700" }}
+                      >
+                        {levelMembersDetails[member.id]?.selfieImage ? (
+                          <img
+                            src={`${SERVER_BASE_URL}${levelMembersDetails[member.id].selfieImage}`}
+                            alt="Selfie"
+                            className="w-10 h-10 rounded-full object-cover"
+                            style={{ border: "1px solid #FFD700" }}
+                          />
+                        ) : (
+                          <div
+                            className="w-10 h-10 rounded-full flex items-center justify-center"
+                            style={{
+                              backgroundColor: "#013220",
+                              border: "1px solid #FFD700",
+                            }}
+                          >
+                            <span
+                              className="text-sm"
+                              style={{ color: "#FFD700" }}
+                            >
+                              {member.name?.charAt(0) ||
+                                member.username?.charAt(0) ||
+                                "U"}
+                            </span>
+                          </div>
+                        )}
+                      </td>
                       <td
                         className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-12 sm:w-16"
                         style={{ color: "#FFD700" }}
@@ -677,13 +937,21 @@ const MLMTree = () => {
                         className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-16 sm:w-24"
                         style={{ color: "#FFD700" }}
                       >
-                        ${Math.floor(Math.random() * 1000)}
+                        <div className="flex items-center justify-cen">
+                          <div className="mb-1">0</div>
+                          <img
+                            className="w-[25%] h-[25%]"
+                            src="/images.png"
+                            alt=""
+                          />
+                        </div>
                       </td>
                       <td
-                        className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-16 sm:w-24"
+                        className="px-1 mt-3 flex items-center justify-center sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-16 sm:w-24"
                         style={{ color: "#FFD700" }}
                       >
-                        ${Math.floor(Math.random() * 500)}
+                        <div className="mb-1">0</div>
+                        <img width="50%" src="/images.png" alt="" />
                       </td>
                       <td
                         className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-16 sm:w-24"
@@ -695,24 +963,30 @@ const MLMTree = () => {
                         className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-16 sm:w-24"
                         style={{ color: "#FFD700" }}
                       >
-                        {member.totalAmount
-                          ? `$${member.totalAmount}`
-                          : `$${Math.floor(Math.random() * 1000)}`}
+                        AED 0
                       </td>
-                      <td className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 w-16 sm:w-24">
-                        <button
-                          onClick={() => handleViewDetail(member)}
-                          className="text-yellow-400 hover:text-yellow-300 transition-colors underline text-xs sm:text-sm md:text-base"
-                        >
-                          View Detail
-                        </button>
+                      <td className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 w-24 sm:w-32">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleViewDetail(member)}
+                            className="text-yellow-400 hover:text-yellow-300 transition-colors underline text-xs sm:text-sm md:text-base"
+                          >
+                            View Detail
+                          </button>
+                          <button
+                            onClick={() => handleNavigateToMemberTree(member)}
+                            className="text-yellow-400 hover:text-yellow-300 transition-colors underline text-xs sm:text-sm md:text-base"
+                          >
+                            View Tree
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td
-                      colSpan="9"
+                      colSpan="10"
                       className="px-2 sm:px-3 md:px-6 py-4 sm:py-6 md:py-8 text-center text-xs sm:text-sm md:text-base"
                       style={{ color: "#FFD700" }}
                     >
@@ -738,6 +1012,30 @@ const MLMTree = () => {
                 Member Details
               </h2>
               <div className="grid grid-cols-1 gap-3 text-sm">
+                {popupMemberDetails?.selfieImage ? (
+                  <div className="flex justify-center mb-4">
+                    <img
+                      src={`${SERVER_BASE_URL}${popupMemberDetails.selfieImage}`}
+                      alt="Selfie"
+                      className="w-32 h-32 rounded-full object-cover"
+                      style={{ border: "2px solid #FFD700" }}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="flex justify-center mb-4 w-32 h-32 rounded-full items-center"
+                    style={{
+                      backgroundColor: "#013220",
+                      border: "2px solid #FFD700",
+                    }}
+                  >
+                    <span className="text-2xl" style={{ color: "#FFD700" }}>
+                      {popupMember?.name?.charAt(0) ||
+                        popupMember?.username?.charAt(0) ||
+                        "U"}
+                    </span>
+                  </div>
+                )}
                 <div>
                   <span className="font-semibold" style={{ color: "#FFD700" }}>
                     Level:
@@ -764,10 +1062,18 @@ const MLMTree = () => {
                 </div>
                 <div>
                   <span className="font-semibold" style={{ color: "#FFD700" }}>
-                    Sponsor ID:
+                    Email:
                   </span>{" "}
                   <span style={{ color: "#FFD700" }}>
-                    {popupMember.sponsorId || "N/A"}
+                    {popupMember.email || "N/A"}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold" style={{ color: "#FFD700" }}>
+                    KYC Status:
+                  </span>{" "}
+                  <span style={{ color: "#FFD700" }}>
+                    {popupMember.kycStatus || "N/A"}
                   </span>
                 </div>
                 <div>
@@ -782,16 +1088,76 @@ const MLMTree = () => {
                   <span className="font-semibold" style={{ color: "#FFD700" }}>
                     Total Amount:
                   </span>{" "}
-                  <span style={{ color: "#FFD700" }}>
-                    {popupMember.totalAmount
-                      ? `$${popupMember.totalAmount}`
-                      : `$${Math.floor(Math.random() * 1000)}`}
-                  </span>
+                  <span style={{ color: "#FFD700" }}>AED 0</span>
                 </div>
+                {popupReferralLevels.length > 0 && (
+                  <div>
+                    <span
+                      className="font-semibold"
+                      style={{ color: "#FFD700" }}
+                    >
+                      Referral Levels:
+                    </span>
+                    <div className="mt-2 max-h-40 overflow-y-auto">
+                      {popupReferralLevels.map((levelMember, index) => (
+                        <div
+                          key={levelMember.id || index}
+                          className="flex items-center gap-2 mb-2"
+                        >
+                          {levelMember.selfieImage ? (
+                            <img
+                              src={`${SERVER_BASE_URL}${levelMember.selfieImage}`}
+                              alt="Selfie"
+                              className="w-10 h-10 rounded-full object-cover"
+                              style={{ border: "1px solid #FFD700" }}
+                            />
+                          ) : (
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center"
+                              style={{
+                                backgroundColor: "#013220",
+                                border: "1px solid #FFD700",
+                              }}
+                            >
+                              <span
+                                className="text-sm"
+                                style={{ color: "#FFD700" }}
+                              >
+                                {levelMember.name?.charAt(0) ||
+                                  levelMember.username?.charAt(0) ||
+                                  "U"}
+                              </span>
+                            </div>
+                          )}
+                          <div>
+                            <span style={{ color: "#FFD700" }}>
+                              {levelMember.name ||
+                                levelMember.username ||
+                                "Unknown"}
+                            </span>
+                            <span
+                              className="text-xs ml-2"
+                              style={{ color: "#FFD700" }}
+                            >
+                              (Level {levelMember.level || "N/A"})
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="mt-6 flex justify-center">
+              <div className="mt-6 flex justify-center gap-4">
                 <button
-                  onClick={handleClosePopup}
+                  onClick={() => handleNavigateToMemberTree(popupMember)}
+                  className="px-4 py-2 rounded-lg font-semibold transition-colors text-sm"
+                  style={{ backgroundColor: "#FFD700", color: "#013220" }}
+                >
+                  View Tree
+                </button>
+                <button
+                  onClick={() => setShowPopup(false)}
                   className="px-4 py-2 rounded-lg font-semibold transition-colors text-sm"
                   style={{ backgroundColor: "#FFD700", color: "#013220" }}
                 >
