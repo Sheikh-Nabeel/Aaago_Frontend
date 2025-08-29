@@ -51,6 +51,7 @@ const Signup = () => {
     confirmPassword: "",
     sponsorBy: "",
     gender: "",
+    otp: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -58,6 +59,10 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [sponsorFullName, setSponsorFullName] = useState("");
   const [sponsorError, setSponsorError] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [canResend, setCanResend] = useState(true);
+  const [sendingOtp, setSendingOtp] = useState(false);
 
   useEffect(() => {
     const ref = searchParams.get("ref");
@@ -65,6 +70,25 @@ const Signup = () => {
       setFormData((prev) => ({ ...prev, sponsorBy: ref }));
     }
   }, [searchParams]);
+
+  // Timer for OTP resend
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            setCanResend(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [resendTimer]);
 
   // Debounced fetch for sponsor name
   useEffect(() => {
@@ -199,9 +223,53 @@ const Signup = () => {
       newErrors.gender = "Gender is required";
       isValid = false;
     }
+    
+    // OTP validation
+    if (otpSent && !formData.otp.trim()) {
+      newErrors.otp = "OTP is required";
+      isValid = false;
+    } else if (otpSent && formData.otp.length !== 6) {
+      newErrors.otp = "OTP must be 6 digits";
+      isValid = false;
+    }
 
     setErrors(newErrors);
     return isValid;
+  };
+
+  const handleSendOTP = async () => {
+    // Validate email before sending OTP
+    const newErrors = {};
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+      setErrors(newErrors);
+      return;
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email is invalid";
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      setSendingOtp(true);
+      const response = await axios.post(
+        `${API_BASE_URL}/email-verification/send-otp`,
+        { email: formData.email.trim() }
+      );
+      
+      console.log("OTP sent successfully:", response.data);
+      setOtpSent(true);
+      setCanResend(false);
+      setResendTimer(60);
+    } catch (error) {
+      console.error("Failed to send OTP:", error);
+      setErrors(prev => ({
+        ...prev,
+        email: error.response?.data?.message || "Failed to send OTP"
+      }));
+    } finally {
+      setSendingOtp(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -222,10 +290,8 @@ const Signup = () => {
 
       const result = await dispatch(signupUser(submissionData)).unwrap();
       console.log("Signup successful:", result);
-      // Explicitly store email in localStorage as a fallback
-      sessionManager.setSignupEmail(formData.email);
-      console.log("Signup - Email stored:", formData.email);
-      navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
+      sessionManager.createSession(result.token, result.user);
+      navigate('/');
     } catch (err) {
       console.error("Signup failed:", err);
     }
@@ -375,7 +441,7 @@ const Signup = () => {
               </div>
             </div>
 
-            {/* Email */}
+            {/* Email Field */}
             <div>
               {errors.email && (
                 <p
@@ -392,7 +458,7 @@ const Signup = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="Email *"
-                disabled={loading}
+                disabled={loading || otpSent}
                 className={`w-full rounded-lg px-4 py-2 border focus:ring-2 focus:ring-yellow-500 outline-none transition-colors duration-300 ${
                   theme === "dark"
                     ? `bg-gray-600 border-gray-500 text-white placeholder-gray-300 ${
@@ -403,6 +469,57 @@ const Signup = () => {
                       }`
                 }`}
               />
+            </div>
+            
+            {/* OTP Field with Send Button */}
+            <div>
+              {errors.otp && (
+                <p
+                  className={`text-sm mb-1 ${
+                    theme === "dark" ? "text-red-400" : "text-red-600"
+                  }`}
+                >
+                  {errors.otp}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  name="otp"
+                  value={formData.otp}
+                  onChange={handleInputChange}
+                  placeholder="Enter 6-digit OTP *"
+                  maxLength={6}
+                  disabled={loading}
+                  className={`w-full rounded-lg px-4 py-2 border focus:ring-2 focus:ring-yellow-500 outline-none transition-colors duration-300 ${
+                    theme === "dark"
+                      ? `bg-gray-600 border-gray-500 text-white placeholder-gray-300 ${
+                          errors.otp ? "border-red-500" : ""
+                        }`
+                      : `bg-white border-gray-300 text-gray-900 placeholder-gray-500 ${
+                          errors.otp ? "border-red-600" : ""
+                        }`
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={handleSendOTP}
+                  disabled={loading || sendingOtp || (!otpSent && !formData.email) || (otpSent && !canResend)}
+                  className={`px-3 py-2 font-semibold rounded-lg transition-colors duration-300 whitespace-nowrap ${
+                    theme === "dark"
+                      ? "bg-yellow-500 text-gray-900 hover:bg-yellow-400 disabled:bg-gray-600 disabled:text-gray-400"
+                      : "bg-yellow-500 text-[#013220] hover:bg-yellow-400 disabled:bg-gray-300 disabled:text-gray-600"
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {sendingOtp
+                    ? "Sending..."
+                    : otpSent
+                      ? canResend
+                        ? "Resend"
+                        : `Resend (${resendTimer}s)`
+                      : "Send OTP"}
+                </button>
+              </div>
             </div>
 
             {/* Phone with country code */}

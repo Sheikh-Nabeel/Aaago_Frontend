@@ -72,22 +72,13 @@ export const signupUser = createAsyncThunk(
       const response = await authAPI.signup(userData);
       dismissToast(loadingToast);
 
-      // Store email in sessionManager and verify
-      sessionManager.setSignupEmail(userData.email);
-      console.log("signupUser - Email stored in session:", userData.email);
-      console.log(
-        "signupUser - Verify email in localStorage:",
-        localStorage.getItem("signup_email")
-      );
-
-      if (response.data.userId) {
-        localStorage.setItem("signupUserId", response.data.userId);
+      // The new signup flow includes OTP verification directly in the signup form
+      // and returns the user and token upon successful registration
+      if (response.data.token && response.data.user) {
+        showSuccess(response.data.message || "Registration completed successfully");
+      } else {
+        showSuccess(response.data.message || "Account created successfully");
       }
-
-      showSuccess(
-        response.data.message ||
-          "OTP sent. Please verify to complete registration."
-      );
 
       return response.data;
     } catch (error) {
@@ -96,36 +87,13 @@ export const signupUser = createAsyncThunk(
         message: error.message || "Signup failed",
       };
       console.log("signupUser - Error:", errorData);
+      showError(errorData.message || "Signup failed");
       return rejectWithValue(errorData);
     }
   }
 );
 
-export const verifyOTP = createAsyncThunk(
-  "user/verifyOTP",
-  async (otpData, { dispatch, rejectWithValue }) => {
-    const loadingToast = showLoading("Verifying OTP...");
-    try {
-      const response = await authAPI.verifyOTP(otpData);
-      dismissToast(loadingToast);
-
-      sessionManager.removeSignupEmail();
-
-      console.log("verifyOTP - Response data:", response.data);
-      showSuccess(
-        response.data.message || "Registration completed successfully!"
-      );
-      return response.data;
-    } catch (error) {
-      dismissToast(loadingToast);
-      const errorData = error.response?.data || {
-        message: error.message || "OTP verification failed",
-      };
-      showError(errorData.message || "OTP verification failed");
-      return rejectWithValue(errorData.message || "OTP verification failed");
-    }
-  }
-);
+// verifyOTP thunk removed as OTP verification is now integrated into signup form
 
 
 export const forgotPassword = createAsyncThunk(
@@ -418,25 +386,7 @@ const userSlice = createSlice({
         state.error = action.payload;
         console.log("signupUser - Rejected:", action.payload);
       })
-      .addCase(verifyOTP.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        console.log("verifyOTP - Pending");
-      })
-      .addCase(verifyOTP.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.isAuthenticated = true;
-        state.signupEmail = null;
-        state.error = null;
-        console.log("verifyOTP - Fulfilled, user:", action.payload.user);
-      })
-      .addCase(verifyOTP.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-        console.log("verifyOTP - Rejected:", action.payload);
-      })
+      // verifyOTP reducer cases removed as OTP verification is now integrated into signup form
       .addCase(forgotPassword.pending, (state) => {
         state.loading = true;
         state.error = null;

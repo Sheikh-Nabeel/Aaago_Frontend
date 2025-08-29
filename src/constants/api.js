@@ -16,7 +16,8 @@ export const API_ENDPOINTS = {
   GET_USER_BY_ID: "/user/referral-tree",
   RESEND_OTP: "/user/resend-otp",
   REFERRAL_LINK: "/user/referral-link",
-  GET_USER_BY_USERNAME: "/user/by-username"
+  GET_USER_BY_USERNAME: "/user/by-username",
+  SEND_EMAIL_OTP: "/email-verification/send-otp"
 };
 
 export const API_CONFIG = {

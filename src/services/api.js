@@ -103,6 +103,10 @@ export const authAPI = {
     console.log("authAPI.signup - Sending request with data:", JSON.stringify(userData, null, 2));
     return api.post(API_ENDPOINTS.SIGNUP, userData);
   },
+  sendEmailOTP: (emailData) => {
+    console.log("authAPI.sendEmailOTP - Sending request with data:", JSON.stringify(emailData, null, 2));
+    return api.post(API_ENDPOINTS.SEND_EMAIL_OTP, emailData);
+  },
   verifyOTP: (otpData) => {
     console.log("authAPI.verifyOTP - Sending request with data:", JSON.stringify(otpData, null, 2));
     return api.post(API_ENDPOINTS.VERIFY_OTP, otpData).then((response) => {

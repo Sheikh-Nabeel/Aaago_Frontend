@@ -28,7 +28,7 @@ import Contact from "./Components/Contact/Contact";
 import Faqs from "./Components/Faqs/FAQS";
 import Login from "./Components/Forms/Login";
 import Signup from "./Components/Forms/Signup";
-import VerifyOTP from "./Components/Forms/VerifyOTP";
+// VerifyOTP component removed as OTP verification is now integrated into signup form
 import ForgotPassword from "./Components/Forms/ForgotPassword";
 import ResetPassword from "./Components/Forms/ResetPassword";
 import MLMTree from "./Components/MLM/MLMTree";
@@ -44,7 +44,6 @@ import RegionalAmbassador from "./Components/RegionalAmbassador/RegionalAmbassad
 const HIDE_NAV_FOOTER_ROUTES = [
   "/login",
   "/signup",
-  "/verify-otp",
   "/forgot-password",
   "/reset-password",
 ];
@@ -117,27 +116,8 @@ function AppContent() {
         <Route path="/team" element={<Team />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/faqs" element={<Faqs />} />
-        <Route
-          path="/login"
-          element={
-            signupEmail || localStorage.getItem("signup_email") ? (
-              <Navigate to="/verify-otp" replace />
-            ) : (
-              <Login />
-            )
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            signupEmail || localStorage.getItem("signup_email") ? (
-              <Navigate to="/verify-otp" replace />
-            ) : (
-              <Signup />
-            )
-          }
-        />
-        <Route path="/verify-otp" element={<VerifyOTP />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route
           path="/forgot-password"
           element={
