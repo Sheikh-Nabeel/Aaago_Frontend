@@ -15,7 +15,7 @@ import sessionManager from "../../utils/sessionManager";
 import { authAPI } from "../../services/api";
 import { SERVER_BASE_URL } from "../../constants/api";
 
-const MLMTree = () => {
+const TreeView = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { userId } = useParams();
@@ -67,15 +67,29 @@ const MLMTree = () => {
       console.log("Loading specific user tree for:", targetUserId);
       const response = await authAPI.getReferralTree(targetUserId);
       console.log("Specific user tree response:", response.data);
+      console.log("Response structure:", {
+        hasReferralTree: !!response.data.referralTree,
+        hasUser: !!response.data.user,
+        referralTreeUser: response.data.referralTree?.user,
+        directUser: response.data.user
+      });
       setMemberTreeData(response.data);
-      setSelectedMember(response.data.referralTree?.user || response.data.user);
+      const targetUser = response.data.referralTree?.user || response.data.user;
+      console.log("Setting selectedMember to:", targetUser);
+      setSelectedMember(targetUser);
+      
+      // Only add to history if this is a navigation from another tree (not direct URL access)
       if (response.data.referralTree?.user || response.data.user) {
-        const newHistory = [
-          ...treeHistory,
-          { member: response.data.referralTree?.user || response.data.user },
-        ];
-        setTreeHistory(newHistory);
-        sessionStorage.setItem("treeHistory", JSON.stringify(newHistory));
+        // Check if we're navigating from another tree or accessing directly
+        const isDirectAccess = window.location.pathname === `/user-tree/${targetUserId}`;
+        if (!isDirectAccess || treeHistory.length === 0) {
+          const newHistory = [
+            ...treeHistory,
+            { member: response.data.referralTree?.user || response.data.user },
+          ];
+          setTreeHistory(newHistory);
+          sessionStorage.setItem("treeHistory", JSON.stringify(newHistory));
+        }
       }
     } catch (error) {
       console.error("Error loading specific user tree:", error);
@@ -191,6 +205,14 @@ const MLMTree = () => {
   };
 
   const handleNavigateToMemberTree = (member) => {
+    console.log("=== handleNavigateToMemberTree DEBUG ===");
+    console.log("Full member object:", member);
+    console.log("Member ID:", member.id);
+    console.log("Member _id:", member._id);
+    console.log("Member userId:", member.userId);
+    console.log("All member keys:", Object.keys(member));
+    console.log("Navigating to:", `/user-tree/${member.id}`);
+    console.log("=== END DEBUG ===");
     const newHistory = [...treeHistory, { member }];
     setTreeHistory(newHistory);
     sessionStorage.setItem("treeHistory", JSON.stringify(newHistory));
@@ -210,37 +232,45 @@ const MLMTree = () => {
   const handleBackToMainTree = () => {
     setTreeHistory([]);
     sessionStorage.removeItem("treeHistory");
-    navigate("/mlm");
+    navigate("/tree");
   };
 
   useEffect(() => {
+    console.log("=== TreeView useEffect triggered ===");
     console.log("MLMTree component mounted");
     console.log("Current token:", token);
     console.log("Current user:", currentUser);
     console.log("Is authenticated:", isAuthenticated);
     console.log("URL userId:", userId);
+    console.log("URL pathname:", window.location.pathname);
+    console.log("useParams userId:", userId);
 
     const isValid = checkSessionValidity();
+    console.log("Session valid:", isValid);
+    
     if (isValid) {
       if (userId) {
+        console.log("=== LOADING SPECIFIC USER TREE ===");
+        console.log("Target userId:", userId);
         console.log("Loading specific user tree from URL");
+        // Reset previous member tree data to ensure clean state
+        setMemberTreeData(null);
+        setSelectedMember(null);
         loadSpecificUserTree(userId);
       } else {
+        console.log("=== LOADING MAIN TREE ===");
         console.log("Dispatching fetchReferralTree with valid session");
+        // Reset member tree data when viewing main tree
+        setMemberTreeData(null);
+        setSelectedMember(null);
         dispatch(fetchReferralTree());
         fetchReferralLink();
       }
     } else {
       console.log("No valid session found, skipping API call");
     }
+    console.log("=== End of useEffect ===");
   }, [dispatch, token, currentUser, isAuthenticated, userId]);
-
-  useEffect(() => {
-    if (userId && sessionValid && isAuthenticated) {
-      console.log("URL userId changed, loading specific user tree");
-      loadSpecificUserTree(userId);
-    }
-  }, [userId, sessionValid, isAuthenticated]);
 
   useEffect(() => {
     const handleSessionCleared = (event) => {
@@ -422,8 +452,17 @@ const MLMTree = () => {
     .sort((a, b) => a - b);
   const currentLevelMembers = membersData[`level${selectedLevel}`] || [];
   const displayUser = isViewingSpecificUser
-    ? selectedMember
+    ? (memberTreeData?.referralTree?.user || selectedMember)
     : referralTree?.referralTree?.user || referralTree?.user || currentUser;
+  
+  console.log("Display logic:", {
+    isViewingSpecificUser,
+    userId,
+    selectedMember,
+    displayUser,
+    memberTreeDataUser: memberTreeData?.referralTree?.user,
+    memberTreeData: !!memberTreeData
+  });
 
   if (
     !currentTreeData ||
@@ -705,10 +744,10 @@ const MLMTree = () => {
                           className="font-semibold"
                           style={{ color: "#FFD700" }}
                         >
-                          Level:
+                          Rank:
                         </span>{" "}
                         <span style={{ color: "#FFD700" }}>
-                          {member.level || 0}
+                          {member.crrRank?.current || "None"}
                         </span>
                       </div>
                       <div className="col-span-2">
@@ -719,7 +758,7 @@ const MLMTree = () => {
                           Name:
                         </span>{" "}
                         <span style={{ color: "#FFD700" }}>
-                          {member.name || "N/A"}
+                          {member.username || "N/A"}
                         </span>
                       </div>
                       <div className="col-span-2">
@@ -730,7 +769,10 @@ const MLMTree = () => {
                           Username:
                         </span>{" "}
                         <span style={{ color: "#FFD700" }}>
-                          {member.username || "N/A"}
+                          {member.name || 
+                            (member.firstName && member.lastName
+                              ? `${member.firstName} ${member.lastName}`
+                              : member.firstName || member.lastName || "N/A")}
                         </span>
                       </div>
                       <div className="col-span-2">
@@ -751,8 +793,8 @@ const MLMTree = () => {
                         >
                           TGP:
                         </span>{" "}
-                        <div className="flex items-center justify-cen">
-                          <div className="mb-1 text-[#FFD700]">0</div>
+                        <div className="flex items-center justify-center">
+                          <div className="mb-1 text-[#FFD700]">{member.qualificationPoints?.tgp?.monthly || 0}</div>
                           <img
                             className="w-[7%] h-[7%]"
                             src="/images.png"
@@ -767,8 +809,8 @@ const MLMTree = () => {
                         >
                           PGP:
                         </span>{" "}
-                        <div className="flex items-center justify-cen">
-                          <div className="mb-1 text-[#FFD700]">0</div>
+                        <div className="flex items-center justify-center">
+                          <div className="mb-1 text-[#FFD700]">{member.qualificationPoints?.pgp?.monthly || 0}</div>
                           <img
                             className="w-[7%] h-[7%]"
                             src="/images.png"
@@ -932,7 +974,10 @@ const MLMTree = () => {
                         className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-20 sm:w-32"
                         style={{ color: "#FFD700" }}
                       >
-                        {member.name || "N/A"}
+                        {member.name || 
+                          (member.firstName && member.lastName
+                            ? `${member.firstName} ${member.lastName}`
+                            : member.firstName || member.lastName || "N/A")}
                       </td>
                       <td
                         className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-20 sm:w-32"
@@ -944,14 +989,14 @@ const MLMTree = () => {
                         className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-12 sm:w-20"
                         style={{ color: "#FFD700" }}
                       >
-                        {member.level || 0}
+                        {member.crrRank?.current || "None"}
                       </td>
                       <td
                         className="px-1 sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-16 sm:w-24"
                         style={{ color: "#FFD700" }}
                       >
-                        <div className="flex items-center justify-cen">
-                          <div className="mb-1">0</div>
+                        <div className="flex items-center justify-center">
+                          <div className="mb-1">{member.qualificationPoints?.tgp?.monthly || 0}</div>
                           <img
                             className="w-[25%] h-[25%]"
                             src="/images.png"
@@ -963,7 +1008,7 @@ const MLMTree = () => {
                         className="px-1 mt-3 flex items-center justify-center sm:px-2 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base w-16 sm:w-24"
                         style={{ color: "#FFD700" }}
                       >
-                        <div className="mb-1">0</div>
+                        <div className="mb-1">{member.qualificationPoints?.pgp?.monthly || 0}</div>
                         <img width="50%" src="/images.png" alt="" />
                       </td>
                       <td
@@ -1185,4 +1230,4 @@ const MLMTree = () => {
   );
 };
 
-export default MLMTree;
+export default TreeView;

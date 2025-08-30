@@ -174,7 +174,7 @@ function AppContent() {
         <Route 
           path="/user-tree/:userId" 
           element={
-            isAuthenticated ? <MLMTree /> : <Navigate to="/login" replace />
+            isAuthenticated ? <TreeView /> : <Navigate to="/login" replace />
           } 
         />
         <Route
