@@ -129,14 +129,54 @@ function AppContent() {
           }
         />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/mlm" element={<MLMTree />} />
-        <Route path="/ddr" element={<DDRPage />} />
-        <Route path="/crr" element={<CRRPage />} />
-        <Route path="/bbr" element={<BBRPage />} />
-        <Route path="/hlr" element={<HLRpage />} />
-        <Route path="/RegionalAmbassador" element={<RegionalAmbassador />} />
-        <Route path="/tree" element={<TreeView />} />
-        <Route path="/user-tree/:userId" element={<MLMTree />} />
+        <Route 
+          path="/mlm" 
+          element={
+            isAuthenticated ? <MLMTree /> : <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/ddr" 
+          element={
+            isAuthenticated ? <DDRPage /> : <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/crr" 
+          element={
+            isAuthenticated ? <CRRPage /> : <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/bbr" 
+          element={
+            isAuthenticated ? <BBRPage /> : <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/hlr" 
+          element={
+            isAuthenticated ? <HLRpage /> : <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/RegionalAmbassador" 
+          element={
+            isAuthenticated ? <RegionalAmbassador /> : <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/tree" 
+          element={
+            isAuthenticated ? <TreeView /> : <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/user-tree/:userId" 
+          element={
+            isAuthenticated ? <MLMTree /> : <Navigate to="/login" replace />
+          } 
+        />
         <Route
           path="/profile"
           element={

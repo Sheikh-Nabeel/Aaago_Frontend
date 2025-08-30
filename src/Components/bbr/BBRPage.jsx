@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { selectUser } from "../../store/userSlice";
+import { API_BASE_URL, API_ENDPOINTS } from "../../constants/api";
+import { showError } from "../../utils/toast";
+import sessionManager from "../../utils/sessionManager";
 
 // Reusable Progress Bar Component
 const ProgressBar = ({ label, value, max }) => {
@@ -27,7 +33,42 @@ const ProgressBar = ({ label, value, max }) => {
 };
 
 export default function BBRPage() {
+  const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState("3 Days 4 Hours");
+  const [pastWins, setPastWins] = useState([]);
+  const [pastWinsLoading, setPastWinsLoading] = useState(false);
+  const user = useSelector(selectUser);
+
+  // Fetch past wins from API
+  const fetchPastWins = async () => {
+    if (!user?._id) return;
+    
+    setPastWinsLoading(true);
+    try {
+      const token = sessionManager.getToken();
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.BBR_PAST_WINS}/${user._id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data.pastWins) {
+          setPastWins(data.data.pastWins);
+        }
+      } else {
+        console.error('Failed to fetch past wins:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching past wins:', error);
+      showError('Failed to load past wins');
+    } finally {
+      setPastWinsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -35,6 +76,10 @@ export default function BBRPage() {
     }, 60000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    fetchPastWins();
+  }, [user?._id]);
 
   const leaderboard = [
     { name: "Ali Khan", rides: 100, reward: "50 AED", status: "Achieved" },
@@ -49,18 +94,36 @@ export default function BBRPage() {
     },
   ];
 
-  const pastCampaigns = [
-    { name: "Happy Friday", reward: "AED 500", status: "Achieved15" },
-    { name: "Speed Weekend", reward: "AED 300", status: "Achieved" },
-    { name: "Newbie Dash", reward: "AED 450", status: "Achieved" },
-    { name: "Rider Marathon", reward: "AED 600", status: "Achieved" },
-  ];
+  // Format date helper function
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   return (
     <div
       className="w-[95%] mx-auto rounded-lg md:w-[100%] md:min-h-screen mb-5 flex flex-col items-center p-6 pt-20 pb-12 transition-colors duration-300"
       style={{ backgroundColor: "#083A06", color: "#FFD700" }}
     >
+      {/* Back Button */}
+      <div className="w-full max-w-5xl mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105"
+          style={{
+            backgroundColor: "rgba(1, 50, 32, 0.85)",
+            border: "1px solid #FFD700",
+            color: "#FFD700",
+          }}
+        >
+          ← Back
+        </button>
+      </div>
+
       {/* Header */}
       <div
         className="w-full md:mt-24 max-w-5xl mb-8  p-6 shadow-lg text-center"
@@ -221,20 +284,36 @@ export default function BBRPage() {
               <tr className="border-b border-yellow-600">
                 <th className="p-4">Campaign</th>
                 <th className="p-4">Reward</th>
+                <th className="p-4">Date</th>
                 <th className="p-4">Status</th>
               </tr>
             </thead>
             <tbody>
-              {pastCampaigns.map((c, i) => (
-                <tr
-                  key={i}
-                  className="border-b border-yellow-700/50 hover:bg-yellow-900/20"
-                >
-                  <td className="p-4">{c.name}</td>
-                  <td className="p-4">{c.reward}</td>
-                  <td className="p-4 text-green-400">{c.status}</td>
+              {pastWinsLoading ? (
+                <tr>
+                  <td colSpan="4" className="p-4 text-center text-yellow-300">
+                    Loading past wins...
+                  </td>
                 </tr>
-              ))}
+              ) : pastWins.length > 0 ? (
+                pastWins.map((win, i) => (
+                  <tr
+                    key={i}
+                    className="border-b border-yellow-700/50 hover:bg-yellow-900/20"
+                  >
+                    <td className="p-4">{win.name}</td>
+                    <td className="p-4">AED {win.reward}</td>
+                    <td className="p-4">{formatDate(win.date)}</td>
+                    <td className="p-4 text-green-400">{win.status}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="p-4 text-center text-yellow-300">
+                    No past wins found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -258,7 +337,7 @@ export default function BBRPage() {
       </div>
 
       {/* Custom Scrollbar Styles */}
-      <style jsx>{`
+      <style>{`
         .scrollbar-thin::-webkit-scrollbar {
           width: 8px;
         }

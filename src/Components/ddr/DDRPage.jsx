@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { fetchMlmDashboard, selectMlmDashboard, selectMlmLoading } from "../../store/mlmSlice";
 import { fetchDdrLeaderboard, selectDdrLeaderboard, selectDdrLeaderboardLoading } from "../../store/ddrSlice";
 import { selectUser } from "../../store/userSlice";
@@ -21,6 +22,7 @@ const DDRCard = ({ label, amount }) => (
 
 export default function DDRPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const mlmDashboard = useSelector(selectMlmDashboard);
   const isLoading = useSelector(selectMlmLoading);
   const user = useSelector(selectUser);
@@ -106,6 +108,21 @@ export default function DDRPage() {
       className="w-[95%] mx-auto rounded-lg md:w-[100%] md:min-h-screen mb-10 flex flex-col items-center p-6 mt-20 transition-colors duration-300"
       style={{ backgroundColor: "#083A06", color: "#FFD700" }}
     >
+      {/* Back Button */}
+      <div className="w-full max-w-4xl mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105"
+          style={{
+            backgroundColor: "rgba(1, 50, 32, 0.85)",
+            border: "1px solid #FFD700",
+            color: "#FFD700",
+          }}
+        >
+          ← Back
+        </button>
+      </div>
+
       <h1 className="text-2xl font-bold my-6">
         {" "}
         🌙 DREAM DIVIDEND REWARDS (DDR)

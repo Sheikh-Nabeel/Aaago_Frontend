@@ -476,6 +476,19 @@ const MLMTree = () => {
       }}
     >
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        {/* General Back Button */}
+        {!userId && (
+          <div className="mb-4 sm:mb-6">
+            <button
+              onClick={() => navigate(-1)}
+              className="px-4 py-2 rounded-lg font-semibold transition-colors text-sm sm:text-base"
+              style={{ backgroundColor: "#FFD700", color: "#013220" }}
+            >
+              ← Back
+            </button>
+          </div>
+        )}
+        
         {userId && (
           <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-2">
             <button

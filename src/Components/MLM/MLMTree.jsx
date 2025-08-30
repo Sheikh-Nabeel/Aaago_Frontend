@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMlmDashboard, selectMlmDashboard, selectMlmLoading } from "../../store/mlmSlice";
 import { selectUser } from "../../store/userSlice";
@@ -21,6 +21,7 @@ const MLMCard = ({ label, amount, link }) => (
 );
 
 export default function MLMTree() {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const mlmDashboard = useSelector(selectMlmDashboard);
   const isLoading = useSelector(selectMlmLoading);
@@ -62,6 +63,21 @@ export default function MLMTree() {
       className="min-h-screen mb-10 flex flex-col items-center p-6 mt-20 transition-colors duration-300"
       style={{ backgroundColor: "#083A06", color: "#FFD700" }}
     >
+      {/* Back Button */}
+      <div className="w-full max-w-lg mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105"
+          style={{
+            backgroundColor: "rgba(1, 50, 32, 0.85)",
+            border: "1px solid #FFD700",
+            color: "#FFD700",
+          }}
+        >
+          ← Back
+        </button>
+      </div>
+
       <h1 className="text-2xl font-bold mb-6">MLM Bonuses</h1>
 
       {/* Top summary */}

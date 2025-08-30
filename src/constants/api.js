@@ -22,7 +22,18 @@ export const API_ENDPOINTS = {
   GET_USER_BY_USERNAME: "/user/by-username",
   SEND_EMAIL_OTP: "/email-verification/send-otp",
   MLM_USER_DASHBOARD: "/mlm/user-dashboard",
-  DDR_LEADERBOARD: "/mlm/ddr/leaderboard"
+  DDR_LEADERBOARD: "/mlm/ddr/leaderboard",
+  CRR_RANK_TRACKING: "/mlm/crr/rank-tracking",
+  CRR_LEADERBOARD: "/mlm/crr/leaderboard",
+  BBR_PAST_WINS: "/mlm/bbr/past-wins",
+  HLR_PROGRESS: "/mlm/hlr/progress",
+  HLR_LEADERBOARD: "/mlm/hlr/leaderboard",
+
+  // Regional Ambassador endpoints
+  REGIONAL_PROGRESS: "/mlm/regional/progress",
+  REGIONAL_LEADERBOARD: "/mlm/regional/leaderboard",
+  REGIONAL_GLOBAL_AMBASSADORS: "/mlm/regional/global-ambassadors",
+  REGIONAL_COUNTRY_UPDATE: "/mlm/regional/country-update-request"
 };
 
 export const API_CONFIG = {
