@@ -1,6 +1,9 @@
 
-// export const API_BASE_URL = "http://aaogobackend.xyz:3001/api"; // for API calls
-// export const SERVER_BASE_URL = "http://aaogobackend.xyz:3001/";
+// HTTPS version commented out as server doesn't support HTTPS yet
+// export const API_BASE_URL = "https://aaogobackend.xyz/api";
+// export const SERVER_BASE_URL = "https://aaogobackend.xyz/";
+
+// Using HTTP version as it's currently supported
 export const API_BASE_URL = "http://localhost:3001/api"; // for API calls
 export const SERVER_BASE_URL = "http://localhost:3001/"; // for static files (images)
 
@@ -17,7 +20,9 @@ export const API_ENDPOINTS = {
   RESEND_OTP: "/user/resend-otp",
   REFERRAL_LINK: "/user/referral-link",
   GET_USER_BY_USERNAME: "/user/by-username",
-  SEND_EMAIL_OTP: "/email-verification/send-otp"
+  SEND_EMAIL_OTP: "/email-verification/send-otp",
+  MLM_USER_DASHBOARD: "/mlm/user-dashboard",
+  DDR_LEADERBOARD: "/mlm/ddr/leaderboard"
 };
 
 export const API_CONFIG = {

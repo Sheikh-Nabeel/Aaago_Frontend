@@ -1,4 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchMlmDashboard, selectMlmDashboard, selectMlmLoading } from "../../store/mlmSlice";
+import { fetchDdrLeaderboard, selectDdrLeaderboard, selectDdrLeaderboardLoading } from "../../store/ddrSlice";
+import { selectUser } from "../../store/userSlice";
 
 // Reusable small stat card
 const DDRCard = ({ label, amount }) => (
@@ -16,39 +20,86 @@ const DDRCard = ({ label, amount }) => (
 );
 
 export default function DDRPage() {
-  // Mock Data (replace with API later)
-  const totalEarned = 12400;
-  const availableBalance = 500;
-  const joinDate = "2023-06-01";
-
+  const dispatch = useDispatch();
+  const mlmDashboard = useSelector(selectMlmDashboard);
+  const isLoading = useSelector(selectMlmLoading);
+  const user = useSelector(selectUser);
+  const apiLeaderboard = useSelector(selectDdrLeaderboard);
+  const isLeaderboardLoading = useSelector(selectDdrLeaderboardLoading);
+  const [expandedLevel, setExpandedLevel] = useState(null);
+  
+  // Fetch MLM dashboard data and leaderboard on component mount
+  useEffect(() => {
+    if (!mlmDashboard) {
+      dispatch(fetchMlmDashboard());
+    }
+    
+    // Fetch leaderboard data
+    dispatch(fetchDdrLeaderboard());
+  }, [dispatch, mlmDashboard]);
+  
+  // Extract data from MLM dashboard
+  const totalEarned = mlmDashboard?.ddr?.earnings?.total || 0;
+  const availableBalance = mlmDashboard?.wallet?.currentBalance || 0;
+  const joinDate = mlmDashboard?.user?.joinedAt ? new Date(mlmDashboard.user.joinedAt).toISOString().split('T')[0] : "";
+  
+  // Create level earnings array from MLM dashboard data
   const levelEarnings = [
     {
       level: "L1",
-      amount: 500,
-      history: [
-        { date: "2025-08-01", source: "Ali123", amount: 200 },
-        { date: "2025-08-10", source: "Fatima456", amount: 300 },
-      ],
+      amount: mlmDashboard?.ddr?.earnings?.level1 || 0,
+      history: [], // API doesn't provide history yet
     },
     {
       level: "L2",
-      amount: 3,
-      history: [{ date: "2025-08-05", source: "Zain789", amount: 3 }],
+      amount: mlmDashboard?.ddr?.earnings?.level2 || 0,
+      history: [],
     },
-    { level: "L3", amount: 2, history: [] },
-    { level: "L4", amount: 1, history: [] },
+    { 
+      level: "L3", 
+      amount: mlmDashboard?.ddr?.earnings?.level3 || 0, 
+      history: [] 
+    },
+    { 
+      level: "L4", 
+      amount: mlmDashboard?.ddr?.earnings?.level4 || 0, 
+      history: [] 
+    },
   ];
+  
+  // Use API leaderboard data if available, otherwise use placeholder
+  const leaderboard = apiLeaderboard?.topEarners && apiLeaderboard.topEarners.length > 0 
+    ? apiLeaderboard.topEarners.map((entry) => ({
+        rank: entry.rank,
+        name: entry.name,
+        username: entry.username ? `@${entry.username}` : "",
+        amount: entry.earnings,
+        isCurrentUser: entry.isCurrentUser || false,
+        levelBreakdown: entry.levelBreakdown
+      }))
+    : [
+        { rank: 1, name: "Ali Khan", username: "@ali", amount: 15200 },
+        { rank: 2, name: "Maria Sohail", username: "@maria", amount: 14750 },
+        { rank: 3, name: "Zain Malik", username: "@zain", amount: 13900 },
+        { rank: 4, name: "Fatima Noor", username: "@fatima", amount: 13200 },
+        { rank: 5, name: "John Smith", username: "@john", amount: 12800 },
+        { rank: 6, name: user?.firstName ? `${user.firstName} ${user.lastName || ''}` : "You", username: user?.username ? `@${user.username}` : "@you", amount: totalEarned, isCurrentUser: true },
+      ];
+      
+  // Get leaderboard title and tip from API if available
+  const leaderboardTitle = apiLeaderboard?.title || "Leaderboard";
+  const leaderboardTip = apiLeaderboard?.tip || "💡 \"Active L1–L4 growth boosts all levels and increases your DDR income!\"";
 
-  const leaderboard = [
-    { rank: 1, name: "Ali Khan", username: "@ali", amount: 15200 },
-    { rank: 2, name: "Maria Sohail", username: "@maria", amount: 14750 },
-    { rank: 3, name: "Zain Malik", username: "@zain", amount: 13900 },
-    { rank: 4, name: "Fatima Noor", username: "@fatima", amount: 13200 },
-    { rank: 5, name: "John Smith", username: "@john", amount: 12800 },
-    { rank: 6, name: "You", username: "@you", amount: 12400 },
-  ];
 
-  const [expandedLevel, setExpandedLevel] = useState(null);
+  // Show loading state while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="w-[95%] mx-auto rounded-lg md:w-[100%] md:min-h-screen mb-10 flex flex-col items-center justify-center p-6 mt-20"
+        style={{ backgroundColor: "#083A06", color: "#FFD700" }}>
+        <div className="text-2xl font-bold">Loading DDR data...</div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -129,7 +180,7 @@ export default function DDRPage() {
 
       {/* Leaderboard */}
       <div className="w-full max-w-4xl mb-10">
-        <h2 className="text-xl font-bold mb-4">Leaderboard</h2>
+        <h2 className="text-xl font-bold mb-4">{leaderboardTitle || "Leaderboard"}</h2>
         <div
           className="rounded-lg shadow-lg max-h-72 overflow-y-auto"
           style={{
@@ -137,23 +188,33 @@ export default function DDRPage() {
             border: "1px solid #FFD700",
           }}
         >
-          {leaderboard.map((entry) => (
-            <div
-              key={entry.rank}
-              className={`flex justify-between px-4 py-2 ${
-                entry.name === "You"
-                  ? "bg-yellow-900 font-bold sticky top-0"
-                  : ""
-              }`}
-            >
-              <span>{entry.rank}</span>
-              <span>
-                {entry.name}{" "}
-                <small className="text-gray-300">{entry.username}</small>
-              </span>
-              <span>AED {entry.amount}</span>
+          {isLeaderboardLoading ? (
+            <div className="flex justify-center items-center p-6">
+              <p>Loading leaderboard data...</p>
             </div>
-          ))}
+          ) : leaderboard.length > 0 ? (
+            leaderboard.map((entry) => (
+              <div
+                key={entry.rank}
+                className={`flex justify-between px-4 py-2 ${
+                  entry.isCurrentUser
+                    ? "bg-yellow-900 font-bold sticky top-0"
+                    : ""
+                }`}
+              >
+                <span>{entry.rank}</span>
+                <span>
+                  {entry.name}{" "}
+                  <small className="text-gray-300">{entry.username}</small>
+                </span>
+                <span>AED {entry.amount.toFixed(2)}</span>
+              </div>
+            ))
+          ) : (
+            <div className="flex justify-center items-center p-6">
+              <p>No leaderboard data available</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -166,8 +227,7 @@ export default function DDRPage() {
         }}
       >
         <p className="italic">
-          💡 "Active L1–L4 growth boosts all levels and increases your DDR
-          income!"
+          {leaderboardTip}
         </p>
       </div>
     </div>

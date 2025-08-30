@@ -1,9 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import userReducer from './userSlice';
+import mlmReducer from './mlmSlice';
+import ddrReducer from './ddrSlice';
 
 export const store = configureStore({
   reducer: {
     user: userReducer,
+    mlm: mlmReducer,
+    ddr: ddrReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -13,4 +17,4 @@ export const store = configureStore({
     }),
 });
 
-export default store; 
+export default store;

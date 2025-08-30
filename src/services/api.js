@@ -158,6 +158,10 @@ export const authAPI = {
     console.log("authAPI.getUserByUsername - Sending request with username:", username);
     return api.get(`${API_ENDPOINTS.GET_USER_BY_USERNAME}?username=${username}`);
   },
+  getMlmDashboard: (userId) => {
+    console.log("authAPI.getMlmDashboard - Sending request with userId:", userId);
+    return api.get(`${API_ENDPOINTS.MLM_USER_DASHBOARD}/${userId}`);
+  },
 };
 
 export default api;
