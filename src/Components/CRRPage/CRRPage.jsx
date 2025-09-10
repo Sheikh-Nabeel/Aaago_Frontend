@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { fetchCrrRankTracking, selectCrrRankTracking, selectCrrRankTrackingLoading } from "../../store/crrSlice";
 import { fetchCrrLeaderboard, selectCrrLeaderboard, selectCrrLeaderboardLoading } from "../../store/crrSlice";
 import { selectUser } from "../../store/userSlice";
+import { API_BASE_URL } from "../../constants/api";
+import { showError } from "../../utils/toast";
+import sessionManager from "../../utils/sessionManager";
 
 // Reusable Progress Bar Component
 const ProgressBar = ({ label, value, max }) => {
@@ -38,11 +41,45 @@ export default function CRRPage() {
   const isLeaderboardLoading = useSelector(selectCrrLeaderboardLoading);
   
   const [showAll, setShowAll] = useState(false);
+  const [userDashboard, setUserDashboard] = useState(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  
+  // Fetch user dashboard data
+  const fetchUserDashboard = async () => {
+    if (!user?._id) return;
+    
+    setDashboardLoading(true);
+    try {
+      const token = sessionManager.getToken();
+      const response = await fetch(`${API_BASE_URL}mlm/user-dashboard/${user._id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUserDashboard(data.data);
+        }
+      } else {
+        console.error('Failed to fetch user dashboard:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching user dashboard:', error);
+      showError('Failed to load user dashboard');
+    } finally {
+      setDashboardLoading(false);
+    }
+  };
   
   useEffect(() => {
     dispatch(fetchCrrRankTracking());
     dispatch(fetchCrrLeaderboard());
-  }, [dispatch]);
+    fetchUserDashboard();
+  }, [dispatch, user?._id]);
   
   // Default values (used when API data is not available)
   const defaultTotalEarned = 0;
@@ -61,9 +98,9 @@ export default function CRRPage() {
   const defaultDaysLeft = 30;
   
   // Extract data from API response or use defaults
-  const totalEarned = 6000; // Replace with API data when available
-  const availableBalance = 2000; // Replace with API data when available
-  const crrWallet = 1500; // Replace with API data when available
+  const totalEarned = userDashboard?.crr?.earnings?.totalEarnings || 0;
+  const availableBalance = userDashboard?.wallet?.currentBalance || 0;
+  const crrWallet = userDashboard?.crr?.earnings?.totalEarnings || 0;
   
   // Process rank tracking data
   const ranks = rankTrackingData?.rankTracking?.map(rank => ({
@@ -77,16 +114,16 @@ export default function CRRPage() {
   const nextRankObj = rankTrackingData?.rankTracking?.find(rank => !rank.isAchieved && !rank.isLocked);
   const nextRank = nextRankObj?.rank || defaultNextRank;
   
-  // Get PGP and TGP values for the next rank
-  const pgp = nextRankObj ? {
-    value: nextRankObj.currentPoints.pgp,
-    max: nextRankObj.requirements.pgp
-  } : defaultPgp;
+  // Get PGP and TGP values from user dashboard or next rank requirements
+  const pgp = {
+    value: userDashboard?.crr?.qualificationPoints?.pgp?.monthly || (nextRankObj?.currentPoints?.pgp || defaultPgp.value),
+    max: nextRankObj?.requirements?.pgp || defaultPgp.max
+  };
   
-  const tgp = nextRankObj ? {
-    value: nextRankObj.currentPoints.tgp,
-    max: nextRankObj.requirements.tgp
-  } : defaultTgp;
+  const tgp = {
+    value: userDashboard?.crr?.qualificationPoints?.tgp?.monthly || (nextRankObj?.currentPoints?.tgp || defaultTgp.value),
+    max: nextRankObj?.requirements?.tgp || defaultTgp.max
+  };
   
   const daysLeft = defaultDaysLeft; // Replace with API data when available
   
@@ -131,6 +168,49 @@ export default function CRRPage() {
       <h1 className="text-2xl font-bold my-6">
         🏆 CRR – Championship Rank Rewards
       </h1>
+
+      {/* User Information */}
+      {dashboardLoading ? (
+        <div className="text-center py-4 mb-6">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto"></div>
+          <p className="mt-2">Loading user data...</p>
+        </div>
+      ) : userDashboard?.user ? (
+        <div
+          className="rounded-2xl p-6 w-full max-w-5xl mb-6 shadow-lg"
+          style={{
+            backgroundColor: "rgba(1, 50, 32, 0.85)",
+            border: "1px solid #FFD700",
+          }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-sm text-gray-300">Name</p>
+              <p className="text-lg font-semibold text-yellow-400">
+                {userDashboard.user.firstName} {userDashboard.user.lastName}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-300">Username</p>
+              <p className="text-lg font-semibold text-yellow-400">
+                @{userDashboard.user.username}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-300">Current Rank</p>
+              <p className="text-lg font-semibold text-yellow-400">
+                {userDashboard.crr?.earnings?.currentRank || 'None'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-300">Joined Date</p>
+              <p className="text-lg font-semibold text-yellow-400">
+                {new Date(userDashboard.user.joinedAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Header: Earnings Summary */}
       <div

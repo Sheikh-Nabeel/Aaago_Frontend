@@ -4,8 +4,8 @@
 // export const SERVER_BASE_URL = "https://aaogobackend.xyz/";
 
 // Using HTTP version as it's currently supported
-export const API_BASE_URL = "http://localhost:3001/api"; // for API calls
-export const SERVER_BASE_URL = "http://localhost:3001/"; // for static files (images)
+export const API_BASE_URL = "https://aaogobackend.xyz/api"; // for API calls
+export const SERVER_BASE_URL = "https://aaogobackend.xyz/"; // for static files (images)
 
 export const API_ENDPOINTS = {
   SIGNUP: "/user/signup",
