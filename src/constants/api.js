@@ -1,11 +1,11 @@
 
 // HTTPS version commented out as server doesn't support HTTPS yet
-// export const API_BASE_URL = "https://aaogobackend.xyz/api";
-// export const SERVER_BASE_URL = "https://aaogobackend.xyz/";
+// export const API_BASE_URL = "https://aaaogo.xyz/api";
+// export const SERVER_BASE_URL = "https://aaaogo.xyz/";
 
 // Using HTTP version as it's currently supported
-export const API_BASE_URL = "https://aaogobackend.xyz/api"; // for API calls
-export const SERVER_BASE_URL = "https://aaogobackend.xyz/"; // for static files (images)
+export const API_BASE_URL = "https://aaaogo.xyz/api"; // for API calls
+export const SERVER_BASE_URL = "https://aaaogo.xyz/"; // for static files (images)
 
 export const API_ENDPOINTS = {
   SIGNUP: "/user/signup",
