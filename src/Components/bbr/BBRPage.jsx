@@ -37,7 +37,71 @@ export default function BBRPage() {
   const [timeLeft, setTimeLeft] = useState("3 Days 4 Hours");
   const [pastWins, setPastWins] = useState([]);
   const [pastWinsLoading, setPastWinsLoading] = useState(false);
+  const [currentCampaign, setCurrentCampaign] = useState(null);
+  const [campaignLoading, setCampaignLoading] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState(null);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const user = useSelector(selectUser);
+
+  // Fetch current campaign from API
+  const fetchCurrentCampaign = async () => {
+    if (!user?._id) return;
+    
+    setCampaignLoading(true);
+    try {
+      const token = sessionManager.getToken();
+      const response = await fetch(`${API_BASE_URL}/mlm/bbr/current-campaign/${user._id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setCurrentCampaign(data.data);
+        }
+      } else {
+        console.error('Failed to fetch current campaign:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching current campaign:', error);
+      showError('Failed to load current campaign');
+    } finally {
+      setCampaignLoading(false);
+    }
+  };
+
+  // Fetch leaderboard from API
+  const fetchLeaderboard = async () => {
+    setLeaderboardLoading(true);
+    try {
+      const token = sessionManager.getToken();
+      const response = await fetch(`${API_BASE_URL}/mlm/bbr/leaderboard`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setLeaderboardData(data.data);
+        }
+      } else {
+        console.error('Failed to fetch leaderboard:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+      showError('Failed to load leaderboard');
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  };
 
   // Fetch past wins from API
   const fetchPastWins = async () => {
@@ -71,28 +135,22 @@ export default function BBRPage() {
   };
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft("3 Days 3 Hours 59 Min");
-    }, 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    fetchPastWins();
+    if (user?._id) {
+      fetchCurrentCampaign();
+      fetchLeaderboard();
+      fetchPastWins();
+    }
   }, [user?._id]);
 
-  const leaderboard = [
-    { name: "Ali Khan", rides: 100, reward: "50 AED", status: "Achieved" },
-    { name: "Maria Sohail", rides: 90, reward: "50 AED", status: "Locked" },
-    { name: "Zain Malik", rides: 85, reward: "50 AED", status: "Locked" },
-    {
-      name: "You",
-      rides: 62,
-      reward: "50 AED",
-      status: "Locked",
-      highlight: true,
-    },
-  ];
+  // Update time left based on current campaign data
+  useEffect(() => {
+    if (currentCampaign?.currentCampaign?.timeLeft) {
+      const { days, hours } = currentCampaign.currentCampaign.timeLeft;
+      setTimeLeft(`${days} Days ${hours} Hours`);
+    }
+  }, [currentCampaign]);
+
+
 
   // Format date helper function
   const formatDate = (dateString) => {
@@ -147,24 +205,37 @@ export default function BBRPage() {
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-yellow-400">
           📢 Current Campaign
         </h3>
-        <ul className="space-y-2 text-yellow-300">
-          <li>
-            <span className="font-semibold">Name:</span> Weekly Turbo Booster
-          </li>
-          <li>
-            <span className="font-semibold">Requirement:</span> 100 Rides
-          </li>
-          <li>
-            <span className="font-semibold">Duration:</span> 7 Days
-          </li>
-          <li>
-            <span className="font-semibold">Period:</span> 14 Aug – 21 Aug
-          </li>
-          <li>
-            <span className="font-semibold">Type:</span> Solo or Team (Newbie
-            rides count only)
-          </li>
-        </ul>
+        {campaignLoading ? (
+          <div className="text-center py-4 text-yellow-300">
+            Loading campaign data...
+          </div>
+        ) : currentCampaign?.currentCampaign ? (
+          <ul className="space-y-2 text-yellow-300">
+            <li>
+              <span className="font-semibold">Name:</span> {currentCampaign.currentCampaign.name}
+            </li>
+            <li>
+              <span className="font-semibold">Requirement:</span> {currentCampaign.currentCampaign.requirement} Rides
+            </li>
+            <li>
+              <span className="font-semibold">Duration:</span> {currentCampaign.currentCampaign.duration} Days
+            </li>
+            <li>
+              <span className="font-semibold">Period:</span> {currentCampaign.currentCampaign.period}
+            </li>
+            <li>
+              <span className="font-semibold">Type:</span> {currentCampaign.currentCampaign.type === 'solo' ? 'Solo' : 'Team'}
+              {currentCampaign.currentCampaign.newbieRidesOnly && ' (Newbie rides only)'}
+            </li>
+            <li>
+              <span className="font-semibold">Reward:</span> AED {currentCampaign.currentCampaign.reward?.amount || 0}
+            </li>
+          </ul>
+        ) : (
+          <div className="text-center py-4 text-yellow-300">
+            No active campaign found
+          </div>
+        )}
       </div>
 
       {/* Progress Tracker */}
@@ -178,12 +249,35 @@ export default function BBRPage() {
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-yellow-400">
           📊 Progress Tracker
         </h3>
-        <ProgressBar label="Total Rides" value={62} max={100} />
-        <div className="text-yellow-300 space-y-2">
-          <p>• You Alone: 45 Rides</p>
-          <p>• Newbie Team: 17 Rides</p>
-          <p className="text-sm">⏳ Time Left: {timeLeft}</p>
-        </div>
+        {campaignLoading ? (
+          <div className="text-center py-4 text-yellow-300">
+            Loading progress data...
+          </div>
+        ) : currentCampaign?.progress ? (
+          <>
+            <ProgressBar 
+              label="Total Rides" 
+              value={currentCampaign.progress.totalRides || 0} 
+              max={currentCampaign.currentCampaign?.requirement || 100} 
+            />
+            <div className="text-yellow-300 space-y-2">
+              <p>• Solo Rides: {currentCampaign.progress.soloRides || 0} Rides</p>
+              <p>• Team Rides: {currentCampaign.progress.teamRides || 0} Rides</p>
+              <p>• Progress: {currentCampaign.progress.progressPercentage || 0}%</p>
+              <p>• Rides Needed: {currentCampaign.progress.ridesNeeded || 0} more</p>
+              <p className="text-sm">⏳ Time Left: {timeLeft}</p>
+              <p className={`text-sm font-semibold ${
+                currentCampaign.progress.isQualified ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {currentCampaign.progress.isQualified ? '✅ Qualified!' : '🔒 Not Qualified Yet'}
+              </p>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-4 text-yellow-300">
+            No progress data available
+          </div>
+        )}
       </div>
 
       {/* Motivation Zone */}
@@ -217,12 +311,32 @@ export default function BBRPage() {
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-yellow-400">
           🏅 Reward Preview
         </h3>
-        <p className="text-yellow-300 font-semibold">
-          🎁 AED 550 Bonus + Priority Rides (1 Week)
-        </p>
-        <p className="text-red-400 font-semibold mt-2">
-          🔒 Locked until 100 rides achieved
-        </p>
+        {campaignLoading ? (
+          <div className="text-center py-4 text-yellow-300">
+            Loading reward data...
+          </div>
+        ) : currentCampaign?.currentCampaign?.reward ? (
+          <>
+            <p className="text-yellow-300 font-semibold">
+              🎁 AED {currentCampaign.currentCampaign.reward.amount} Bonus
+              {currentCampaign.currentCampaign.reward.perks?.length > 0 && 
+                ` + ${currentCampaign.currentCampaign.reward.perks.join(', ')}`
+              }
+            </p>
+            <p className={`font-semibold mt-2 ${
+              currentCampaign.progress?.isQualified ? 'text-green-400' : 'text-red-400'
+            }`}>
+              {currentCampaign.progress?.isQualified 
+                ? '✅ Reward Unlocked!' 
+                : `🔒 Locked until ${currentCampaign.currentCampaign.requirement} rides achieved`
+              }
+            </p>
+          </>
+        ) : (
+          <div className="text-center py-4 text-yellow-300">
+            No reward information available
+          </div>
+        )}
       </div>
 
       {/* Leaderboard */}
@@ -237,33 +351,51 @@ export default function BBRPage() {
             border: "1px solid #FFD700",
           }}
         >
-          <table className="w-full text-left text-yellow-400">
-            <thead className="sticky top-0 bg-[rgba(1,50,32,1)]">
-              <tr className="border-b border-yellow-600">
-                <th className="p-4">Rank</th>
-                <th className="p-4">Name</th>
-                <th className="p-4">Rides</th>
-                <th className="p-4">Reward</th>
-                <th className="p-4">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((p, i) => (
-                <tr
-                  key={i}
-                  className={`border-b border-yellow-700/50 hover:bg-yellow-900/20 ${
-                    p.highlight ? "bg-yellow-900/50 font-bold" : ""
-                  }`}
-                >
-                  <td className="p-4">{i + 1}</td>
-                  <td className="p-4">{p.name}</td>
-                  <td className="p-4">{p.rides} rides</td>
-                  <td className="p-4">{p.reward}</td>
-                  <td className="p-4">{p.status}</td>
+          {leaderboardLoading ? (
+            <div className="text-center py-8 text-yellow-300">
+              Loading leaderboard...
+            </div>
+          ) : leaderboardData?.leaderboard?.length > 0 ? (
+            <table className="w-full text-left text-yellow-400">
+              <thead className="sticky top-0 bg-[rgba(1,50,32,1)]">
+                <tr className="border-b border-yellow-600">
+                  <th className="p-4">Rank</th>
+                  <th className="p-4">Name</th>
+                  <th className="p-4">Role</th>
+                  <th className="p-4">Rides</th>
+                  <th className="p-4">Reward</th>
+                  <th className="p-4">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {leaderboardData.leaderboard.map((participant, i) => (
+                  <tr
+                    key={i}
+                    className={`border-b border-yellow-700/50 hover:bg-yellow-900/20 ${
+                      participant.rank === leaderboardData.userPosition?.rank ? "bg-yellow-900/50 font-bold" : ""
+                    }`}
+                  >
+                    <td className="p-4">{participant.rank}</td>
+                    <td className="p-4">{participant.name}</td>
+                    <td className="p-4 capitalize">{participant.role}</td>
+                    <td className="p-4">{participant.rides} rides</td>
+                    <td className="p-4">AED {participant.reward}</td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        participant.status === 'Locked' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
+                      }`}>
+                        {participant.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="text-center py-8 text-yellow-300">
+              No leaderboard data available
+            </div>
+          )}
         </div>
       </div>
 
