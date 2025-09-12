@@ -23,7 +23,7 @@ const faqs = [
   {
     title: "INSTANT WITHDRAWALS",
     content:
-      "Drivers don’t have to wait for weekly payments—they can withdraw their earnings anytime in crypto, to their bank, or mobile wallets.",
+      "Drivers don't have to wait for weekly payments—they can withdraw their earnings anytime in crypto, to their bank, or mobile wallets.",
   },
   {
     title: "ACCOUNT TRANSFER AFTER DEATH",
@@ -33,7 +33,7 @@ const faqs = [
   {
     title: "MORE THAN JUST RIDES",
     content:
-      "AAAO Go isn’t just for ride-hailing—it also supports services like car recovery, moving, delivery, and other on-demand services, creating more earning opportunities for drivers and service providers.",
+      "AAAO Go isn't just for ride-hailing—it also supports services like car recovery, moving, delivery, and other on-demand services, creating more earning opportunities for drivers and service providers.",
   },
 ];
 
@@ -141,7 +141,7 @@ const contacts = [
   {
     title: "How can I contact AAAO Go for support ?",
     content:
-      "You can reach our support team through the app’s help center, email, or customer service hotline.",
+      "You can reach our support team through the app's help center, email, or customer service hotline.",
   },
 ];
 
@@ -164,69 +164,79 @@ const FAQS = () => {
   };
 
   const renderSection = (title, sectionKey, data) => (
-    <div className="px-6 py-10 text-green-800 dark:text-green-300 md:flex md:gap-10">
-      <div className="w-[100%]">
-        <h2 className="text-3xl font-bold mb-4">{title}</h2>
-        {data.map((item, index) => (
-          <div
-            key={index}
-            className="border-b border-green-300 dark:border-gray-600 py-4 cursor-pointer"
-          >
+    <div className="px-3 sm:px-4 lg:px-6 py-6 sm:py-8 lg:py-10 text-green-800 dark:text-green-300">
+      <div className="w-full">
+        <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 leading-tight">{title}</h2>
+        <div className="space-y-2 sm:space-y-3">
+          {data.map((item, index) => (
             <div
-              onClick={() => toggle(sectionKey, index)}
-              className="flex justify-between items-center"
+              key={index}
+              className="border-b border-green-300 dark:border-gray-600 py-3 sm:py-4 cursor-pointer"
             >
-              <h3
-                className={`font-bold text-sm ${
-                  active[sectionKey] === index
-                    ? "text-[#0B996F]"
-                    : "text-[#0A4624] dark:text-green-300"
-                }`}
+              <div
+                onClick={() => toggle(sectionKey, index)}
+                className="flex justify-between items-start gap-4"
               >
-                {item.title}
-              </h3>
-              {active[sectionKey] === index ? (
-                <FaChevronUp className="text-[#0B996F]" />
-              ) : (
-                <FaChevronDown className="text-[#0B996F]" />
+                <h3
+                  className={`font-bold text-xs sm:text-sm lg:text-sm leading-relaxed flex-1 ${
+                    active[sectionKey] === index
+                      ? "text-[#0B996F]"
+                      : "text-[#0A4624] dark:text-green-300"
+                  }`}
+                >
+                  {item.title}
+                </h3>
+                <div className="flex-shrink-0 mt-1">
+                  {active[sectionKey] === index ? (
+                    <FaChevronUp className="text-[#0B996F] text-sm" />
+                  ) : (
+                    <FaChevronDown className="text-[#0B996F] text-sm" />
+                  )}
+                </div>
+              </div>
+              {active[sectionKey] === index && item.content && (
+                <div className="mt-3 sm:mt-4 pl-0">
+                  <p className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm leading-relaxed">
+                    {item.content}
+                  </p>
+                </div>
               )}
             </div>
-            {active[sectionKey] === index && item.content && (
-              <p className="mt-2 text-gray-700 dark:text-gray-300 text-sm">
-                {item.content}
-              </p>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div className="bg-white p-5 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
-      <div className="h-[500px] rounded-3xl my-7 w-[95%] mx-auto bg-black text-white">
+    <div className="bg-white p-2 sm:p-3 lg:p-5 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
+      {/* Hero Section */}
+      <div className="min-h-[300px] sm:min-h-[400px] lg:h-[500px] rounded-2xl sm:rounded-3xl my-4 sm:my-6 lg:my-7 w-full sm:w-[98%] lg:w-[95%] mx-auto bg-black text-white">
         <div
-          className="relative bg-cover bg-center h-[500px] rounded-3xl overflow-hidden flex items-center mt-20 justify-center"
+          className="relative bg-cover bg-center min-h-[300px] sm:min-h-[400px] lg:h-[500px] rounded-2xl sm:rounded-3xl overflow-hidden flex items-center mt-12 sm:mt-16 lg:mt-20 justify-center p-4 sm:p-6"
           style={{ backgroundImage: `url(${bg})` }}
         >
           <div className="absolute inset-0 bg-black bg-opacity-70" />
-          <div className="relative z-10 text-center px-4">
-            <nav className="text-sm text-white/80 mb-4 flex items-center justify-center">
+          <div className="relative z-10 text-center px-2 sm:px-4">
+            <nav className="text-xs sm:text-sm text-white/80 mb-3 sm:mb-4 flex items-center justify-center">
               <Link to="/" className="hover:underline text-white">
                 Home
               </Link>
-              <span className="mx-2 text-[#387B55] text-2xl -mt-1">›</span>
+              <span className="mx-2 text-[#387B55] text-lg sm:text-2xl -mt-1">›</span>
               <span>FAQ</span>
             </nav>
-            <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
               Answers to Common Questions about Our{" "}
-              <br className="max-lg:hidden" /> Services and Policies
+              <br className="hidden lg:block" /> Services and Policies
             </h1>
           </div>
         </div>
       </div>
-      <div className="flex w-[100%] max-lg:flex-col">
-        <div className="w-[100%]">
+
+      {/* Main Content Layout */}
+      <div className="flex flex-col xl:flex-row w-full gap-6 lg:gap-8">
+        {/* FAQ Sections */}
+        <div className="w-full xl:w-[75%]">
           {renderSection("FAQS!", "general", faqs)}
           {renderSection("General Questions", "questions", questions)}
           {renderSection("For Riders", "riders", riders)}
@@ -235,70 +245,74 @@ const FAQS = () => {
           {renderSection("Safety & Security", "safety", safetys)}
           {renderSection("Support & Contact", "contact", contacts)}
         </div>
-        <div className="px-6 pb-16 text-green-800 dark:text-green-300 md:flex md:gap-10 h-[20rem] mt-28 max-lg:mt-0">
-          <div className="mt-8 md:mt-0 bg-green-50 dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-            <div className="bg-white dark:bg-gray-700 w-12 h-12 flex items-center justify-center rounded-full mb-4 shadow">
-              <FaRegCommentDots className="text-green-600 dark:text-green-300 text-xl" />
+        
+        {/* Sidebar Contact Card */}
+        <div className="w-full xl:w-[25%] px-3 sm:px-4 lg:px-6 pb-8 sm:pb-12 lg:pb-16 text-green-800 dark:text-green-300 xl:mt-16">
+          <div className="bg-green-50 dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-sm sticky top-6">
+            <div className="bg-white dark:bg-gray-700 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-full mb-3 sm:mb-4 shadow">
+              <FaRegCommentDots className="text-green-600 dark:text-green-300 text-lg sm:text-xl" />
             </div>
-            <h3 className="text-xl font-semibold text-green-700 dark:text-green-300">
+            <h3 className="text-lg sm:text-xl font-semibold text-green-700 dark:text-green-300 mb-2 sm:mb-3 leading-tight">
               You have a different question?
             </h3>
-            <p className="text-gray-700 dark:text-gray-300 mt-2 mb-4">
+            <p className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
               Reach out to our customer support team for prompt and personalized
               assistance.
             </p>
             <Link
               to="/contact"
-              className="inline-block bg-[#0B996F] text-white font-semibold py-2 px-4 rounded hover:bg-green-700 dark:hover:bg-green-700 transition"
+              className="inline-block bg-[#0B996F] text-white font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded text-sm sm:text-base hover:bg-green-700 dark:hover:bg-green-700 transition-colors duration-300"
             >
               Contact Us
             </Link>
           </div>
         </div>
       </div>
+
+      {/* App Download Section */}
       <div
-        className="bg-[#e8f7f0] dark:bg-gray-800 relative py-20 mb-5 px-6 h-[130vh] max-lg:h-auto items-center flex w-[95%] rounded-3xl mx-auto"
+        className="bg-[#e8f7f0] dark:bg-gray-800 relative py-12 sm:py-16 lg:py-20 mb-4 sm:mb-5 px-4 sm:px-6 lg:px-6 min-h-[70vh] sm:min-h-[80vh] lg:h-[130vh] items-center flex w-full sm:w-[98%] lg:w-[95%] rounded-2xl sm:rounded-3xl mx-auto"
         style={{ backgroundImage: `url(${bg2})` }}
       >
-        <div className="absolute inset-0 bg-[#E2F4EA] dark:bg-gray-900/50 opacity-50 rounded-3xl"></div>
-        <div className="w-full px-3 z-10 mx-auto flex flex-col md:flex-row items-center justify-between gap-16">
-          <div className="text-center md:text-left max-w-xl">
-            <h2 className="text-3xl md:text-5xl font-bold text-[#0B996F] mb-4">
-              The Easiest Way to Book <br />
-              Your Ride Register Now for <br />
+        <div className="absolute inset-0 bg-[#E2F4EA] dark:bg-gray-900/50 opacity-50 rounded-2xl sm:rounded-3xl"></div>
+        <div className="w-full px-2 sm:px-3 lg:px-3 z-10 mx-auto flex flex-col lg:flex-row items-center justify-between gap-8 sm:gap-12 lg:gap-16">
+          <div className="text-center lg:text-left max-w-xl w-full lg:w-auto">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0B996F] mb-3 sm:mb-4 leading-tight">
+              The Easiest Way to Book <br className="hidden sm:block" />
+              Your Ride Register Now for <br className="hidden sm:block" />
               Instant Access
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 text-lg mb-6">
+            <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base lg:text-lg mb-4 sm:mb-6 leading-relaxed px-2 lg:px-0">
               Book your ride quickly and effortlessly with just a few taps on
               our app
             </p>
-            <div className="flex flex-wrap justify-center md:justify-start gap-4">
-              <a href="#">
+            <div className="flex flex-row justify-center lg:justify-start gap-3 sm:gap-4">
+              <a href="#" className="block">
                 <img
                   src={googlePlay}
                   alt="Google Play"
-                  className="h-12 rounded-lg"
+                  className="h-10 sm:h-12 rounded-lg"
                 />
               </a>
-              <a href="#">
+              <a href="#" className="block">
                 <img
                   src={appStore}
                   alt="App Store"
-                  className="h-12 rounded-lg"
+                  className="h-10 sm:h-12 rounded-lg"
                 />
               </a>
             </div>
           </div>
-          <div className="relative">
+          <div className="relative w-full lg:w-auto flex justify-center">
             <img
               src={womanImage}
               alt="Happy user"
-              className="w-full max-w-md h-[100vh] max-lg:h-auto object-cover rounded-2xl"
+              className="w-full max-w-sm sm:max-w-md h-[50vh] sm:h-[60vh] lg:h-[100vh] object-cover rounded-2xl"
             />
             <img
               src={phoneApp}
               alt="App Screenshot"
-              className="absolute top-32 -left-28 max-lg:-left-10 max-lg:w-20 max-lg:top-5 md:w-60 drop-shadow-xl"
+              className="absolute top-16 sm:top-20 lg:top-32 -left-6 sm:-left-8 lg:-left-28 w-16 sm:w-20 md:w-24 lg:w-60 drop-shadow-xl"
             />
           </div>
         </div>

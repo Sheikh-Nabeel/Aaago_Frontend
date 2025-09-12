@@ -36,7 +36,7 @@ const services = [
     need: "Why You Might Need Car Recovery:",
     cardimg: recovery,
     span1: "🔋 Dead Battery",
-    p1: ` – Vehicle won’t start? We’ll recharge or tow.`,
+    p1: ` – Vehicle won't start? We'll recharge or tow.`,
     span2: "🛠️ Engine Failure",
     p2: " – Sudden breakdowns require expert towing.",
     span3: "🚧 Accidents or Collisions",
@@ -56,7 +56,7 @@ const services = [
     span10: "🏙️ Car Transfer Between Cities",
     p10: " – Safe city-to-city vehicle movement.",
     description:
-      "Get back on the road — safely and swiftly. AAAO Go offers 24/7 car recovery support across the UAE. Whether it’s an unexpected breakdown or a scheduled vehicle movement, our trained team ensures smooth, secure transport — anytime, anywhere.",
+      "Get back on the road — safely and swiftly. AAAO Go offers 24/7 car recovery support across the UAE. Whether it's an unexpected breakdown or a scheduled vehicle movement, our trained team ensures smooth, secure transport — anytime, anywhere.",
   },
   {
     title: "AAAO rides / cab services",
@@ -81,9 +81,9 @@ const services = [
     span8: "👨‍✈️ Professional Drivers",
     p8: " – Verified, trained, and polite.",
     span9: "🌙 24/7 Availability",
-    p9: " – Day or night, we’re always on the move.",
+    p9: " – Day or night, we're always on the move.",
     description:
-      "Your ride, your way –with AAAO Go. We provide fast, comfortable, and affordable cab services across the UAE, tailored to your lifestyle. Whether it’s a short ride or an all-day booking, AAAO Go gets you there – safely and on time.",
+      "Your ride, your way –with AAAO Go. We provide fast, comfortable, and affordable cab services across the UAE, tailored to your lifestyle. Whether it's a short ride or an all-day booking, AAAO Go gets you there – safely and on time.",
   },
   {
     title: "Packers & Shifting Movers",
@@ -209,15 +209,16 @@ const Services = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300 p-5">
-      <div className="h-[500px] rounded-3xl my-7 w-[95%] mx-auto bg-black dark:bg-gray-900 text-white dark:text-white">
+    <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300 p-2 sm:p-3 lg:p-5">
+      {/* Hero Section */}
+      <div className="min-h-[300px] sm:min-h-[400px] lg:h-[500px] rounded-2xl sm:rounded-3xl my-4 sm:my-6 lg:my-7 w-full sm:w-[98%] lg:w-[95%] mx-auto bg-black dark:bg-gray-900 text-white dark:text-white">
         <div
-          className="relative mt-20 bg-cover bg-center h-[500px] rounded-3xl overflow-hidden flex items-center justify-center dark:bg-gray-900"
+          className="relative mt-12 sm:mt-16 lg:mt-20 bg-cover bg-center min-h-[300px] sm:min-h-[400px] lg:h-[500px] rounded-2xl sm:rounded-3xl overflow-hidden flex items-center justify-center dark:bg-gray-900 p-4 sm:p-6"
           style={{ backgroundImage: `url(${bg})` }}
         >
           <div className="absolute inset-0 bg-black dark:bg-gray-900 bg-opacity-60 dark:bg-opacity-80" />
-          <div className="relative z-10 text-center px-4">
-            <nav className="text-sm text-white dark:text-gray-200 mb-4 flex items-center justify-center">
+          <div className="relative z-10 text-center px-2 sm:px-4">
+            <nav className="text-xs sm:text-sm text-white dark:text-gray-200 mb-3 sm:mb-4 flex items-center justify-center">
               <Link
                 to="/"
                 onClick={scrollToTop}
@@ -225,102 +226,119 @@ const Services = () => {
               >
                 Home
               </Link>
-              <span className="mx-2 text-[#387B55] dark:text-yellow-400 text-2xl -mt-1">
+              <span className="mx-2 text-[#387B55] dark:text-yellow-400 text-lg sm:text-2xl -mt-1">
                 ›
               </span>
               <span className="text-white dark:text-gray-200">Services</span>
             </nav>
-            <h1 className="text-4xl md:text-5xl font-bold text-white dark:text-white leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white dark:text-white leading-tight">
               Experience Convenience Our Service{" "}
-              <br className="max-lg:hidden" /> Offerings
+              <br className="hidden lg:block" /> Offerings
             </h1>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 relative mb-32 max-lg:mb-0 py-12 flex flex-col-reverse md:flex-row items-center gap-10">
-        <div className="w-[50%] max-lg:w-[100%]">
+      {/* The Future We See Section */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-4 relative mb-16 sm:mb-24 lg:mb-32 py-8 sm:py-10 lg:py-12 flex flex-col lg:flex-row items-center gap-6 sm:gap-8 lg:gap-10">
+        <div className="w-full lg:w-[50%] order-2 lg:order-1">
           <img
             src={future}
             alt="Driver with customer"
-            className="rounded-3xl w-full object-cover"
+            className="rounded-2xl sm:rounded-3xl w-full h-64 sm:h-80 lg:h-auto object-cover"
           />
         </div>
-        <div className="w-[50%] max-lg:w-[100%]">
-          <h2 className="text-5xl font-bold max-lg:text-4xl text-[#0B996F] dark:text-yellow-400 mb-4">
+        
+        <div className="w-full lg:w-[50%] order-1 lg:order-2">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0B996F] dark:text-yellow-400 mb-3 sm:mb-4 leading-tight">
             The Future We See
           </h2>
-          <ul className="space-y-3 mb-6 text-gray-700 dark:text-gray-200">
-            <li className="flex items-start gap-2">
-              <FaCheckCircle className="text-[#0B996F] dark:text-yellow-400 mt-1" />
-              A global ride-hailing network that empowers drivers & customers.
+          
+          <ul className="space-y-2 sm:space-y-3 mb-4 sm:mb-6 text-gray-700 dark:text-gray-200">
+            <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
+              <FaCheckCircle className="text-[#0B996F] dark:text-yellow-400 mt-1 flex-shrink-0" />
+              <span className="leading-relaxed">
+                A global ride-hailing network that empowers drivers & customers.
+              </span>
             </li>
-            <li className="flex items-start gap-2">
-              <FaCheckCircle className="text-[#0B996F] dark:text-yellow-400 mt-1" />
-              Creating financial freedom and opportunities.
+            <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
+              <FaCheckCircle className="text-[#0B996F] dark:text-yellow-400 mt-1 flex-shrink-0" />
+              <span className="leading-relaxed">
+                Creating financial freedom and opportunities.
+              </span>
             </li>
-            <li className="flex items-start gap-2">
-              <FaCheckCircle className="text-[#0B996F] dark:text-yellow-400 mt-1" />
-              Sustainable & innovative mobility solutions.
+            <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
+              <FaCheckCircle className="text-[#0B996F] dark:text-yellow-400 mt-1 flex-shrink-0" />
+              <span className="leading-relaxed">
+                Sustainable & innovative mobility solutions.
+              </span>
             </li>
           </ul>
-          <p className="mb-6 text-gray-700 dark:text-gray-200">
+          
+          <p className="mb-4 sm:mb-6 text-gray-700 dark:text-gray-200 text-sm sm:text-base leading-relaxed">
             <span className="font-bold">Our vision is simple</span> – to build a
             ride-hailing platform where drivers earn fairly, customers enjoy
             reliable services, and communities thrive through innovation.
           </p>
-          <div className="flex items-start gap-3 p-2 rounded-lg">
-            <div className="bg-green-200 dark:bg-gray-700 p-3 rounded-full">
-              <FaShieldAlt className="text-[#0B996F] dark:text-yellow-400 text-2xl" />
+          
+          <div className="flex items-start gap-3 sm:gap-4 p-2 sm:p-3 lg:p-2 rounded-lg">
+            <div className="bg-green-200 dark:bg-gray-700 p-2 sm:p-3 rounded-full flex-shrink-0">
+              <FaShieldAlt className="text-[#0B996F] dark:text-yellow-400 text-xl sm:text-2xl" />
             </div>
             <div>
-              <p className="font-bold text-[#0B996F] dark:text-yellow-400 text-lg">
+              <p className="font-bold text-[#0B996F] dark:text-yellow-400 text-base sm:text-lg mb-1 sm:mb-2">
                 Safety Measures
               </p>
-              <p className="text-gray-600 dark:text-gray-200 text-sm">
+              <p className="text-gray-600 dark:text-gray-200 text-xs sm:text-sm leading-relaxed">
                 Verified drivers, real-time tracking & No Male Companion rides
                 for ladies and families – your peace of mind comes first.
               </p>
             </div>
           </div>
         </div>
+        
+        {/* Flag Direction - Hidden on mobile/tablet */}
         <img
           src={flagdirection}
           alt=""
-          className="absolute max-lg:hidden left-[22%] w-[40%] -bottom-28"
+          className="absolute left-[22%] w-[40%] -bottom-28 hidden xl:block"
         />
       </div>
 
-      <div className="text-center mb-12">
-        <button className="bg-[#1E784B] dark:bg-yellow-500 dark:text-gray-900 text-white text-sm font-semibold px-8 py-3 rounded-full mb-4 hover:bg-green-700 dark:hover:bg-yellow-400 transition-colors duration-300">
+      {/* Header Section */}
+      <div className="text-center mb-8 sm:mb-10 lg:mb-12 px-2 sm:px-4">
+        <button className="bg-[#1E784B] dark:bg-yellow-500 dark:text-gray-900 text-white text-xs sm:text-sm font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-full mb-3 sm:mb-4 hover:bg-green-700 dark:hover:bg-yellow-400 transition-colors duration-300">
           The Perfect Ride Awaits
         </button>
-        <h2 className="text-5xl font-bold max-lg:text-4xl text-[#0B996F] dark:text-yellow-400">
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0B996F] dark:text-yellow-400 leading-tight">
           One App, Unlimited Possibilities
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-6 px-20 max-lg:px-4 bg-white dark:bg-gray-800">
+      {/* Services Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 py-4 sm:py-6 px-3 sm:px-6 lg:px-20 bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl mx-2 sm:mx-4 lg:mx-0">
         {services.map((service, index) => (
           <div
             key={index}
-            className="bg-[#E2F4EA] dark:bg-gray-700 rounded-lg shadow px-5 py-3 flex flex-col justify-between"
+            className="bg-[#E2F4EA] dark:bg-gray-700 rounded-lg shadow p-4 sm:p-5 lg:px-5 lg:py-3 flex flex-col justify-between min-h-[280px] sm:min-h-[320px]"
           >
-            <img
-              src={service.image}
-              alt={service.title}
-              className="h-32 w-full rounded-2xl object-cover"
-            />
-            <h3 className="text-xl font-semibold mt-4 text-gray-900 dark:text-white">
-              <span className="mr-2 text-sm">{service.icon}</span>
-              {service.title}
-            </h3>
-            <p className="text-xs text-gray-700 dark:text-gray-200 mt-2 flex-grow">
-              {service.description}
-            </p>
+            <div>
+              <img
+                src={service.image}
+                alt={service.title}
+                className="h-24 sm:h-28 lg:h-32 w-full rounded-xl sm:rounded-2xl object-cover mb-3 sm:mb-4"
+              />
+              <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3 leading-tight">
+                <span className="mr-2 text-sm">{service.icon}</span>
+                {service.title}
+              </h3>
+              <p className="text-xs sm:text-sm lg:text-xs text-gray-700 dark:text-gray-200 flex-grow leading-relaxed line-clamp-4">
+                {service.description}
+              </p>
+            </div>
             <button
               onClick={() => setSelectedService(service)}
-              className="bg-[#319A64] dark:bg-yellow-500 dark:text-gray-900 text-white px-2 py-1 mt-4 rounded hover:bg-green-700 dark:hover:bg-yellow-400 w-fit transition-colors duration-300"
+              className="bg-[#319A64] dark:bg-yellow-500 dark:text-gray-900 text-white px-3 sm:px-4 py-2 mt-3 sm:mt-4 rounded text-sm hover:bg-green-700 dark:hover:bg-yellow-400 w-fit transition-colors duration-300"
             >
               View Details
             </button>
@@ -328,91 +346,94 @@ const Services = () => {
         ))}
       </div>
 
+      {/* Service Detail Modal */}
       {selectedService && (
-        <div className="fixed inset-0 bg-black dark:bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center px-4">
-          <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 rounded-xl bg-white dark:bg-gray-800 p-6 max-w-5xl w-full relative overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 bg-black dark:bg-gray-900 bg-opacity-60 z-50 flex justify-center items-center p-2 sm:p-4">
+          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-10 rounded-xl bg-white dark:bg-gray-800 p-4 sm:p-6 max-w-5xl w-full relative overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
             <button
               onClick={() => setSelectedService(null)}
-              className="absolute top-2 right-2 text-gray-600 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 text-2xl"
+              className="absolute top-2 right-2 sm:top-3 sm:right-3 text-gray-600 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 text-xl sm:text-2xl z-10 bg-white dark:bg-gray-800 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center"
             >
               ×
             </button>
 
-            <img
-              src={selectedService.cardimg}
-              alt={selectedService.title}
-              className="w-full lg:w-[40%] object-cover rounded-xl max-h-[500px]"
-            />
+            <div className="w-full lg:w-[40%]">
+              <img
+                src={selectedService.cardimg}
+                alt={selectedService.title}
+                className="w-full h-48 sm:h-64 lg:h-full max-h-[300px] lg:max-h-[500px] object-cover rounded-xl"
+              />
+            </div>
 
-            <div className="w-full lg:w-[60%] overflow-y-auto">
-              <h3 className="text-2xl font-semibold mb-2 text-gray-800 dark:text-white">
+            <div className="w-full lg:w-[60%] overflow-y-auto pr-2">
+              <h3 className="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3 text-gray-800 dark:text-white leading-tight">
                 {selectedService.title}
               </h3>
-              <p className="text-sm text-gray-700 dark:text-gray-200 mb-4">
+              <p className="text-sm sm:text-base text-gray-700 dark:text-gray-200 mb-3 sm:mb-4 leading-relaxed">
                 {selectedService.description}
               </p>
-              <h4 className="font-semibold text-base mb-2 text-gray-800 dark:text-white">
+              <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3 text-gray-800 dark:text-white">
                 {selectedService.need}
               </h4>
-              <ul className="text-sm text-gray-700 dark:text-gray-200 list-disc ml-5 space-y-3">
+              <ul className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 space-y-2 sm:space-y-3">
                 {selectedService.span1 && (
-                  <li className="list-none">
-                    <span className="font-bold">{selectedService.span1}</span>{" "}
-                    {selectedService.p1}
+                  <li className="list-none leading-relaxed">
+                    <span className="font-bold">{selectedService.span1}</span>
+                    <span className="text-xs sm:text-sm">{selectedService.p1}</span>
                   </li>
                 )}
                 {selectedService.span2 && (
-                  <li className="list-none">
-                    <span className="font-bold">{selectedService.span2}</span>{" "}
-                    {selectedService.p2}
+                  <li className="list-none leading-relaxed">
+                    <span className="font-bold">{selectedService.span2}</span>
+                    <span className="text-xs sm:text-sm">{selectedService.p2}</span>
                   </li>
                 )}
                 {selectedService.span3 && (
-                  <li className="list-none">
-                    <span className="font-bold">{selectedService.span3}</span>{" "}
-                    {selectedService.p3}
+                  <li className="list-none leading-relaxed">
+                    <span className="font-bold">{selectedService.span3}</span>
+                    <span className="text-xs sm:text-sm">{selectedService.p3}</span>
                   </li>
                 )}
                 {selectedService.span4 && (
-                  <li className="list-none">
-                    <span className="font-bold">{selectedService.span4}</span>{" "}
-                    {selectedService.p4}
+                  <li className="list-none leading-relaxed">
+                    <span className="font-bold">{selectedService.span4}</span>
+                    <span className="text-xs sm:text-sm">{selectedService.p4}</span>
                   </li>
                 )}
                 {selectedService.span5 && (
-                  <li className="list-none">
-                    <span className="font-bold">{selectedService.span5}</span>{" "}
-                    {selectedService.p5}
+                  <li className="list-none leading-relaxed">
+                    <span className="font-bold">{selectedService.span5}</span>
+                    <span className="text-xs sm:text-sm">{selectedService.p5}</span>
                   </li>
                 )}
                 {selectedService.span6 && (
-                  <li className="list-none">
-                    <span className="font-bold">{selectedService.span6}</span>{" "}
-                    {selectedService.p6}
+                  <li className="list-none leading-relaxed">
+                    <span className="font-bold">{selectedService.span6}</span>
+                    <span className="text-xs sm:text-sm">{selectedService.p6}</span>
                   </li>
                 )}
                 {selectedService.span7 && (
-                  <li className="list-none">
-                    <span className="font-bold">{selectedService.span7}</span>{" "}
-                    {selectedService.p7}
+                  <li className="list-none leading-relaxed">
+                    <span className="font-bold">{selectedService.span7}</span>
+                    <span className="text-xs sm:text-sm">{selectedService.p7}</span>
                   </li>
                 )}
                 {selectedService.span8 && (
-                  <li className="list-none">
-                    <span className="font-bold">{selectedService.span8}</span>{" "}
-                    {selectedService.p8}
+                  <li className="list-none leading-relaxed">
+                    <span className="font-bold">{selectedService.span8}</span>
+                    <span className="text-xs sm:text-sm">{selectedService.p8}</span>
                   </li>
                 )}
                 {selectedService.span9 && (
-                  <li className="list-none">
-                    <span className="font-bold">{selectedService.span9}</span>{" "}
-                    {selectedService.p9}
+                  <li className="list-none leading-relaxed">
+                    <span className="font-bold">{selectedService.span9}</span>
+                    <span className="text-xs sm:text-sm">{selectedService.p9}</span>
                   </li>
                 )}
                 {selectedService.span10 && (
-                  <li className="list-none">
-                    <span className="font-bold">{selectedService.span10}</span>{" "}
-                    {selectedService.p10}
+                  <li className="list-none leading-relaxed">
+                    <span className="font-bold">{selectedService.span10}</span>
+                    <span className="text-xs sm:text-sm">{selectedService.p10}</span>
                   </li>
                 )}
               </ul>
@@ -421,37 +442,38 @@ const Services = () => {
         </div>
       )}
 
+      {/* Statistics Section */}
       <div
         ref={ref}
-        className="bg-[#e8f9f1] dark:bg-gray-800 text-center py-16 px-4 mb-12 max-lg:py-8"
+        className="bg-[#e8f9f1] dark:bg-gray-800 text-center py-10 sm:py-12 lg:py-16 px-4 mb-8 sm:mb-10 lg:mb-12 mx-2 sm:mx-4 lg:mx-0 rounded-lg sm:rounded-xl"
       >
-        <h2 className="text-5xl font-bold max-lg:text-4xl text-[#0B996F] dark:text-yellow-400 mb-12">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0B996F] dark:text-yellow-400 mb-8 sm:mb-10 lg:mb-12 leading-tight px-2">
           Breaking Barriers, Building a Fairer Future
           <br />
           for One Billion People
         </h2>
-        <div className="flex flex-col md:flex-row justify-center items-center gap-36 max-lg:gap-10">
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-12 sm:gap-16 md:gap-24 lg:gap-36">
           <div>
-            <p className="text-5xl font-bold text-[#555D55] dark:text-white">
+            <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#555D55] dark:text-white">
               {inView && <CountUp end={5} duration={2} />}
             </p>
-            <p className="text-xl text-[#555D55] dark:text-gray-200 mt-2">
+            <p className="text-base sm:text-lg lg:text-xl text-[#555D55] dark:text-gray-200 mt-2">
               countries
             </p>
           </div>
           <div>
-            <p className="text-5xl font-bold text-[#555D55] dark:text-white">
+            <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#555D55] dark:text-white">
               {inView && <CountUp end={144} duration={2} />}
             </p>
-            <p className="text-xl text-[#555D55] dark:text-gray-200 mt-2">
+            <p className="text-base sm:text-lg lg:text-xl text-[#555D55] dark:text-gray-200 mt-2">
               cities
             </p>
           </div>
           <div>
-            <p className="text-5xl font-bold text-[#555D55] dark:text-white">
+            <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#555D55] dark:text-white">
               {inView && <CountUp end={1500} duration={2.5} separator="," />}
             </p>
-            <p className="text-xl text-[#555D55] dark:text-gray-200 mt-2">
+            <p className="text-base sm:text-lg lg:text-xl text-[#555D55] dark:text-gray-200 mt-2">
               Registered Members
             </p>
           </div>
